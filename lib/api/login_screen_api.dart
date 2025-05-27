@@ -9,7 +9,7 @@ class LoginScreenService {
   final String baseUrl = dotenv.env['API_BASE_URL']!;
   final storage = FlutterSecureStorage();
 
-  Future<dynamic> login(String email, String password) async {
+  Future<dynamic> login(String email, String password, bool rememberMe) async {
     final url = Uri.parse('$baseUrl/Auth/customer/login');
 
     try {
@@ -23,8 +23,10 @@ class LoginScreenService {
         final data = jsonDecode(response.body);
         final jsonResponse = CustomerLoginResponse.fromJson(data);
 
-        if (jsonResponse != null) {
+        if (jsonResponse != null && rememberMe) {
           await storage.write(key: 'jwt_token', value: jsonResponse.Token);
+          return jsonResponse;
+        } else {
           return jsonResponse;
         }
       } else {

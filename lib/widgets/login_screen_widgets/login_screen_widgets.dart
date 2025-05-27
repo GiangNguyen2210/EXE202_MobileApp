@@ -15,6 +15,7 @@ class _LoginFormState extends State<LoginForm> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final LoginScreenService _loginScreenService = LoginScreenService();
+  bool _obscurePassword = false;
   bool _rememberMe = false;
 
   @override
@@ -38,7 +39,16 @@ class _LoginFormState extends State<LoginForm> {
           obscureText: true,
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.lock_outline),
-            suffixIcon: const Icon(Icons.visibility),
+            suffixIcon: IconButton(
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
+              icon: Icon(
+                _obscurePassword ? Icons.visibility : Icons.visibility_off,
+              ),
+            ),
             hintText: 'Enter your password',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -50,7 +60,14 @@ class _LoginFormState extends State<LoginForm> {
           children: [
             Row(
               children: [
-                Checkbox(value: false, onChanged: (_) {}),
+                Checkbox(
+                  value: _rememberMe,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _rememberMe = value ?? false;
+                    });
+                  },
+                ),
                 const Text("Remember me"),
               ],
             ),
@@ -89,7 +106,11 @@ class _LoginFormState extends State<LoginForm> {
               }
 
               try {
-                final result = await _loginScreenService.login(email, password);
+                final result = await _loginScreenService.login(
+                  email,
+                  password,
+                  _rememberMe,
+                );
 
                 if (result is CustomerLoginResponse) {
                   // Success logic here
