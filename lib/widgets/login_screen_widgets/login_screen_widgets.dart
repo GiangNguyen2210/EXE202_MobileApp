@@ -15,7 +15,7 @@ class _LoginFormState extends State<LoginForm> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final LoginScreenService _loginScreenService = LoginScreenService();
-  bool _obscurePassword = false;
+  bool _obscurePassword = true;
   bool _rememberMe = false;
 
   @override
@@ -36,7 +36,7 @@ class _LoginFormState extends State<LoginForm> {
         // Password
         TextField(
           controller: _passwordController,
-          obscureText: true,
+          obscureText: _obscurePassword,
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.lock_outline),
             suffixIcon: IconButton(
@@ -142,7 +142,25 @@ class _LoginFormState extends State<LoginForm> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
-              onPressed: () {},
+              onPressed: () async {
+                try {
+                  final result = await _loginScreenService.signInWithGoogle();
+
+                  if (result is CustomerLoginResponse) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Welcome, ${result.Role}")),
+                    );
+                  } else if (result is ErrorMessageResponse) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(result.Error)));
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("An error occurred: $e")),
+                  );
+                }
+              },
               icon: const Icon(Icons.g_mobiledata, size: 32),
             ),
           ],
