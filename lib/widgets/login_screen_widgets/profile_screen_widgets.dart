@@ -1,28 +1,99 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:exe202_mobile_app/api/profile_api.dart';
 
 // Profile Avatar Widget
-class ProfileAvatar extends StatelessWidget {
-  const ProfileAvatar({super.key});
+class ProfileAvatar extends StatefulWidget {
+  final String? userPicture;
+  final int upId;
+
+  const ProfileAvatar({super.key, this.userPicture, required this.upId});
+
+  @override
+  State<ProfileAvatar> createState() => _ProfileAvatarState();
+}
+
+class _ProfileAvatarState extends State<ProfileAvatar> {
+  File? _image;
+
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+
+      try {
+        final api = ProfileApi();
+        final response = await api.uploadProfileImage(widget.upId, _image!);
+        if (response.secureUrl != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile image uploaded successfully!'),
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: const CircleAvatar(
-        radius: 50,
-        backgroundColor: Colors.grey,
-        child: Icon(IconlyLight.profile, size: 50, color: Colors.white),
-      ),
+          child: CircleAvatar(
+            radius: 50,
+            backgroundColor: Colors.grey,
+            backgroundImage: _image != null
+                ? FileImage(_image!)
+                : widget.userPicture != null
+                ? NetworkImage(widget.userPicture!) as ImageProvider
+                : null,
+            child: (_image == null && widget.userPicture == null)
+                ? const Icon(IconlyLight.profile, size: 50, color: Colors.white)
+                : null,
+          ),
+        ),
+        Positioned(
+          bottom: -5,
+          right: -5,
+          child: GestureDetector(
+            onTap: _pickAndUploadImage,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.blue,
+              ),
+              child: const Icon(
+                Icons.camera_alt,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
