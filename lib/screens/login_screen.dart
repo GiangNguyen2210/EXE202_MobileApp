@@ -45,14 +45,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text('App Chảo', style: TextStyle(fontSize: 28,
+                    const Text(
+                      'App Chảo',
+                      style: TextStyle(
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white)),
-                    const Text('Your Personal Kitchen Companion',
-                        style: TextStyle(fontSize: 14, color: Colors.white70)),
+                        color: Colors.white,
+                      ),
+                    ),
+                    const Text(
+                      'Your Personal Kitchen Companion',
+                      style: TextStyle(fontSize: 14, color: Colors.white70),
+                    ),
                   ],
                 ),
-                const Spacer(flex: 1,),
+                const Spacer(flex: 1),
                 Column(
                   children: [
                     SingleChildScrollView(
@@ -80,12 +87,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: Text(
                                     'Login',
                                     style: TextStyle(
-                                      color: isLogin ? Colors.orange : Colors.grey,
-                                      fontWeight: isLogin ? FontWeight.bold : FontWeight.normal,
+                                      color: isLogin
+                                          ? Colors.orange
+                                          : Colors.grey,
+                                      fontWeight: isLogin
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
                                     ),
                                   ),
                                 ),
-                                Spacer(), // This pushes the next widgets to the end
+                                Spacer(),
+                                // This pushes the next widgets to the end
                                 const Text("Don't have an account?"),
                                 TextButton(
                                   onPressed: () {
@@ -97,8 +109,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: Text(
                                     'Sign Up',
                                     style: TextStyle(
-                                      color: !isLogin ? Colors.orange : Colors.grey,
-                                      fontWeight: isLogin ? FontWeight.bold : FontWeight.normal,                                    ),
+                                      color: !isLogin
+                                          ? Colors.orange
+                                          : Colors.grey,
+                                      fontWeight: isLogin
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -110,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                const Spacer(flex: 2,),
+                const Spacer(flex: 2),
               ],
             ),
           ),
