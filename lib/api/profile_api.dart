@@ -14,7 +14,7 @@ class ProfileApi {
   Future<UserProfileResponse> fetchUserProfile(int upId) async {
     final String? token = await storage.read(key: 'jwt_token');
     final response = await http.get(
-      Uri.parse('$baseUrl/userProfile/$upId'),
+      Uri.parse('$baseUrl/UserProfile/userProfile/$upId'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
