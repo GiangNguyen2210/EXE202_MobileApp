@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import '../api/profile_api.dart';
 import '../models/DTOs/user_profile_response.dart';
-import '../widgets/login_screen_widgets/profile_screen_widgets.dart';
+import '../widgets/profile_screen_widgets.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
