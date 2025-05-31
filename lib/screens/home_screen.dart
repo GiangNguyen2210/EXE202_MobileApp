@@ -9,7 +9,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   bool _isSearchBoxVisible = false;
   final PageController _pageController = PageController();
   bool _isNavBarVisible = true;
@@ -17,7 +18,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late Animation<Offset> _navBarAnimation;
   int _currentPage = 0;
   final int _recipesPerPage = 14; // 14 recipes per page (7 rows of 2)
-  final List<ScrollController> _scrollControllers = []; // One ScrollController per page
+  final List<ScrollController> _scrollControllers =
+  []; // One ScrollController per page
 
   @override
   void initState() {
@@ -26,13 +28,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _navBarAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0, 1),
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _navBarAnimation =
+        Tween<Offset>(begin: Offset.zero, end: const Offset(0, 1)).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOut,
+          ),
+        );
 
     // Initialize ScrollControllers for each page
     final int totalPages = (42 / _recipesPerPage).ceil(); // Based on 42 recipes
@@ -59,7 +61,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _scrollToTop() {
-    if (_scrollControllers.isNotEmpty && _currentPage < _scrollControllers.length) {
+    if (_scrollControllers.isNotEmpty &&
+        _currentPage < _scrollControllers.length) {
       _scrollControllers[_currentPage].animateTo(
         0,
         duration: const Duration(milliseconds: 300),
@@ -85,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(65),
+        preferredSize: const Size.fromHeight(60),
         child: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
@@ -113,12 +116,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                     ),
                   ),
+
                   Image.asset(
                     'assets/icon.png',
                     height: 40,
                     width: 40,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.error, size: 40, color: Colors.red);
+                      return const Icon(
+                        Icons.error,
+                        size: 40,
+                        color: Colors.red,
+                      );
                     },
                   ),
                 ],
@@ -133,7 +141,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -146,9 +157,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               hintText: 'Find recipe...',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8.0),
-                                borderSide: const BorderSide(color: Colors.grey),
+                                borderSide: const BorderSide(
+                                  color: Colors.grey,
+                                ),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14.0,
+                                vertical: 8.0,
+                              ),
                             ),
                             onSubmitted: (value) {
                               setState(() {
@@ -160,7 +176,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                     IconButton(
                       icon: Icon(
-                        _isSearchBoxVisible ? IconlyLight.closeSquare : IconlyLight.search,
+                        _isSearchBoxVisible
+                            ? IconlyLight.closeSquare
+                            : IconlyLight.search,
                         color: Colors.grey,
                       ),
                       onPressed: () {
@@ -177,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(10.0),
+                padding: const EdgeInsets.all(12.0),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -201,20 +219,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   itemCount: totalPages,
                   itemBuilder: (context, pageIndex) {
                     final startIndex = pageIndex * _recipesPerPage;
-                    final endIndex = (startIndex + _recipesPerPage) > allRecipes.length
+                    final endIndex =
+                    (startIndex + _recipesPerPage) > allRecipes.length
                         ? allRecipes.length
                         : (startIndex + _recipesPerPage);
-                    final pageRecipes = allRecipes.sublist(startIndex, endIndex);
+                    final pageRecipes = allRecipes.sublist(
+                      startIndex,
+                      endIndex,
+                    );
 
                     return NotificationListener<ScrollNotification>(
                       onNotification: (ScrollNotification notification) {
                         if (notification is ScrollUpdateNotification) {
-                          if (notification.scrollDelta! > 0 && _isNavBarVisible) {
+                          if (notification.scrollDelta! > 0 &&
+                              _isNavBarVisible) {
                             setState(() {
                               _isNavBarVisible = false;
                             });
                             _animationController.forward();
-                          } else if (notification.scrollDelta! < 0 && !_isNavBarVisible) {
+                          } else if (notification.scrollDelta! < 0 &&
+                              !_isNavBarVisible) {
                             setState(() {
                               _isNavBarVisible = true;
                             });
@@ -226,16 +250,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: SingleChildScrollView(
                         controller: _scrollControllers[pageIndex],
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: Column(
                             children: [
                               GridView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 2,
-                                  crossAxisSpacing: 14,
-                                  mainAxisSpacing: 14,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
                                   childAspectRatio: 0.65,
                                 ),
                                 itemCount: pageRecipes.length,
@@ -250,7 +275,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   );
                                 },
                               ),
-                              const SizedBox(height: 50), // Reserve space for page counter
+                              const SizedBox(height: 48),
+                              // Reserve space for page counter
                             ],
                           ),
                         ),
@@ -265,9 +291,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Positioned(
             left: 0,
             right: 0,
-            bottom: _isNavBarVisible ? 0.0 : -5.0, // Adjust based on navbar visibility
+            bottom: _isNavBarVisible ? -5.0 : -10.0,
+            // Move up when navbar is visible, down when hidden
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.all(14.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -303,25 +330,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ],
       ),
-      bottomNavigationBar: SlideTransition(
+      bottomNavigationBar: _isNavBarVisible
+          ? SlideTransition(
         position: _navBarAnimation,
-        child: SizedBox(
-          height: 60.0, // Reduced height of BottomNavigationBar
-          child: BottomNavigationBar(
-            items: const [
-              BottomNavigationBarItem(icon: Icon(IconlyLight.home), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(IconlyLight.discovery), label: 'Explore'),
-              BottomNavigationBarItem(icon: Icon(IconlyLight.bookmark), label: 'Save'),
-              BottomNavigationBarItem(icon: Icon(IconlyLight.buy), label: 'Shopping'),
-              BottomNavigationBarItem(icon: Icon(IconlyLight.user2), label: 'Profile'),
-            ],
-            selectedItemColor: Colors.orange,
-            unselectedItemColor: Colors.grey,
-            currentIndex: 0,
-            onTap: (index) {},
-          ),
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(IconlyLight.home), label: 'Home',),
+            BottomNavigationBarItem(icon: Icon(IconlyLight.discovery), label: 'Explore',),
+            BottomNavigationBarItem(icon: Icon(IconlyLight.bookmark), label: 'Save',),
+            BottomNavigationBarItem(icon: Icon(IconlyLight.buy), label: 'Shopping',),
+            BottomNavigationBarItem(icon: Icon(IconlyLight.user2), label: 'Profile',),
+          ],
+          selectedItemColor: Colors.orange,
+          unselectedItemColor: Colors.grey,
+          currentIndex: 0,
+          onTap: (index) {},
         ),
-      ),
+      )
+          : null,
     );
   }
 
@@ -370,30 +398,54 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(IconlyLight.timeCircle, size: 14, color: Colors.grey),
+                    const Icon(
+                      IconlyLight.timeCircle,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(width: 4),
-                    Text(time, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text(
+                      time,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(IconlyLight.star, size: 14, color: Colors.orange),
+                    const Icon(
+                      IconlyLight.star,
+                      size: 14,
+                      color: Colors.orange,
+                    ),
                     const SizedBox(width: 4),
-                    Text(rating, style: const TextStyle(color: Colors.orange, fontSize: 12)),
+                    Text(
+                      rating,
+                      style: const TextStyle(
+                        color: Colors.orange,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   author,
-                  style: const TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 12),
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
