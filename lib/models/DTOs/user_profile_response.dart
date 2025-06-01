@@ -10,6 +10,9 @@ class UserProfileResponse {
   final String email;
   final String? role;
   final String? userPicture;
+  final String? phoneNumber;
+  final int? subcriptionId;
+  final DateTime? endDate;
 
   UserProfileResponse({
     required this.upId,
@@ -23,6 +26,9 @@ class UserProfileResponse {
     required this.email,
     this.role,
     this.userPicture,
+    this.phoneNumber,
+    this.subcriptionId,
+    this.endDate,
   });
 
   factory UserProfileResponse.fromJson(Map<String, dynamic> json) {
@@ -38,6 +44,9 @@ class UserProfileResponse {
       email: json['email'] ?? '',
       role: json['role'],
       userPicture: json['userPicture'],
+      phoneNumber: json['phoneNumber'], // Thêm trường
+      subcriptionId: json['subcriptionId'], // Thêm trường
+      endDate: json['endDate'] != null ? DateTime.tryParse(json['endDate']) : null,
     );
   }
 }
