@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../widgets/app_bottom_navigation.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -32,7 +35,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: Image.asset(
-                        'assets/logo.png',
+                        'assets/icon.png',
                         height: 60, // Slightly smaller logo
                         fit: BoxFit.cover,
                       ),
@@ -217,21 +220,19 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: AppBottomNavigation(
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt), label: 'Orders'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart), label: 'Cart'),
+          BottomNavigationBarItem(icon: Icon(IconlyLight.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(IconlyLight.discovery), label: 'Explore'),
+          BottomNavigationBarItem(icon: Icon(IconlyLight.bookmark), label: 'Save'),
+          BottomNavigationBarItem(icon: Icon(IconlyLight.buy), label: 'Shopping'),
+          BottomNavigationBarItem(icon: Icon(IconlyLight.user2), label: 'Profile'),
         ],
+        currentIndex: 0,
+        onTap: (index) {},
+        backgroundColor: Colors.white,
         selectedItemColor: Colors.orange,
         unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        onTap: (index) {
-          // TODO: Handle navigation
-        },
       ),
     );
   }
