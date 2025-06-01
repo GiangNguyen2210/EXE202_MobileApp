@@ -6,9 +6,7 @@ import 'screens/profile_screen.dart';
 
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
-  runApp(const MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: ProfileScreen(),
-  ));
+  runApp(
+    const MaterialApp(debugShowCheckedModeBanner: false, home: LoginScreen()),
+  );
 }
-
