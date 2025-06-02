@@ -3,6 +3,7 @@ import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/home_screen_widget/category_chip_widget.dart';
 import '../widgets/home_screen_widget/recipe_card_widget.dart';
+import '../widgets/app_bottom_navigation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -182,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       },
                     ),
                     IconButton(
-                      icon: const Icon(IconlyLight.user2, color: Colors.grey),
+                      icon: const Icon(IconlyLight.profile, color: Colors.grey),
                       onPressed: () {},
                     ),
                   ],
@@ -314,25 +315,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ],
       ),
-      bottomNavigationBar: _isNavBarVisible
-          ? SlideTransition(
-        position: _navBarAnimation,
-        child: BottomNavigationBar(
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(IconlyLight.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(IconlyLight.discovery), label: 'Explore'),
-            BottomNavigationBarItem(icon: Icon(IconlyLight.bookmark), label: 'Save'),
-            BottomNavigationBarItem(icon: Icon(IconlyLight.buy), label: 'Shopping'),
-            BottomNavigationBarItem(icon: Icon(IconlyLight.user2), label: 'Profile'),
-          ],
-          selectedItemColor: Colors.orange,
-          unselectedItemColor: Colors.grey,
-          currentIndex: 0,
-          onTap: (index) {},
-        ),
-      )
-          : null,
+      bottomNavigationBar: AppBottomNavigation(
+        items: const [
+          BottomNavigationBarItem(icon: Icon(IconlyLight.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(IconlyLight.discovery), label: 'Explore'),
+          BottomNavigationBarItem(icon: Icon(IconlyLight.bookmark), label: 'Save'),
+          BottomNavigationBarItem(icon: Icon(IconlyLight.buy), label: 'Shopping'),
+          BottomNavigationBarItem(icon: Icon(IconlyLight.user2), label: 'Profile'),
+        ],
+        currentIndex: 0,
+        onTap: (index) {},
+        isVisible: _isNavBarVisible,
+        animation: _navBarAnimation,
+        backgroundColor: Colors.white,
+        selectedItemColor: Colors.orange,
+        unselectedItemColor: Colors.grey,
+      ),
     );
   }
 }
