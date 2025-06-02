@@ -51,4 +51,50 @@ class ProfileApi {
       throw Exception('Failed to upload profile image: ${response.statusCode} - $responseBody');
     }
   }
+
+  Future<void> updateUserProfile(UserProfileResponse profile) async {
+    final String? token = await storage.read(key: 'jwt_token');
+    final response = await http.put(
+      Uri.parse('$baseUrl/UserProfile/userProfile/${profile.upId}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'uPId': profile.upId,
+        'fullName': profile.fullName,
+        'username': profile.username,
+        'age': profile.age,
+        'gender': profile.gender,
+        'allergies': profile.allergies,
+        'healthConditions': profile.healthConditions,
+        'userId': profile.userId,
+        'email': profile.email,
+        'role': profile.role,
+        'userPicture': profile.userPicture,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update user profile: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<List<String>> fetchIngredientTypes() async {
+    final String? token = await storage.read(key: 'jwt_token');
+    final response = await http.get(
+      Uri.parse('$baseUrl/ingredientTypes'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.cast<String>();
+    } else {
+      throw Exception('Failed to load ingredient types: ${response.statusCode} - ${response.body}');
+    }
+  }
 }

@@ -12,7 +12,7 @@ import 'screens/notifications_screen.dart';
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
   runApp(
-     const MaterialApp(debugShowCheckedModeBanner: false, home: SubscriptionScreen()),
+     const MaterialApp(debugShowCheckedModeBanner: false, home: ProfileScreen()),
   );
 }
 
