@@ -3,10 +3,12 @@ import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../api/profile_api.dart';
 import '../models/DTOs/user_profile_response.dart';
-import '../widgets/profile_screen_widgets.dart';
+import '../widgets/profile_screen_widgets/profile_screen_widgets.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  const ProfileScreen({super.key, required this.navigatorKey});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -27,7 +29,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _userProfileFuture = ProfileApi().fetchUserProfile(1); // Mock UPId
+    print('Fetching user profile...');
+    _userProfileFuture = ProfileApi().fetchUserProfile(1).then((profile) {
+      _selectedAllergies = List.from(profile.allergies); // Initialize once
+      return profile;
+    });
   }
 
   @override
@@ -48,7 +54,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _isEditing = !_isEditing;
       if (!_isEditing) {
-        _userProfileFuture = ProfileApi().fetchUserProfile(1);
+        _userProfileFuture = ProfileApi().fetchUserProfile(1).then((profile) {
+          _selectedAllergies = List.from(profile.allergies); // Reinitialize on discard
+          return profile;
+        });
       }
     });
   }
@@ -61,7 +70,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    // Email validation
     final emailPattern = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     if (!_emailController.text.trim().isEmpty && !emailPattern.hasMatch(_emailController.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,7 +111,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _showAllergiesDialog(BuildContext context, List<String> initialAllergies) async {
     final result = await showDialog<List<String>>(
       context: context,
-      builder: (context) => AllergiesDialog(initialAllergies: initialAllergies),
+      builder: (context) => AllergiesDialog(
+        initialAllergies: initialAllergies,
+        navigatorKey: widget.navigatorKey,
+      ),
     );
 
     if (result != null) {
@@ -115,6 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('Building ProfileScreen');
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
@@ -123,9 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(IconlyLight.arrowLeft2, color: Colors.black),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: null,
           ),
           flexibleSpace: Container(
             decoration: const BoxDecoration(
@@ -187,11 +197,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: FutureBuilder<UserProfileResponse>(
         future: _userProfileFuture,
         builder: (context, snapshot) {
+          print('FutureBuilder state: ${snapshot.connectionState}, hasData: ${snapshot.hasData}, hasError: ${snapshot.hasError}');
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else if (snapshot.hasData) {
+            print('Rendering UI with data: ${snapshot.data!.fullName}');
+            print('UserProfile: ${snapshot.data!.toString()}');
             final userProfile = snapshot.data!;
             _fullNameController = TextEditingController(text: userProfile.fullName);
             _usernameController = TextEditingController(text: userProfile.username ?? 'N/A');
@@ -204,7 +217,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _conditionControllers = userProfile.healthConditions
                 .map((condition) => TextEditingController(text: condition))
                 .toList();
-            _selectedAllergies = userProfile.allergies;
+
+            print('Building ProfileAvatar');
+            print('Building ProfileName');
+            print('Building StatCard');
+            print('Building SectionCard for Allergies');
+            print('Building SectionCard for Health Conditions');
+            print('Building SectionCard for Personal Information');
 
             return SingleChildScrollView(
               child: Padding(
@@ -288,7 +307,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       title: 'PERSONAL INFORMATION',
                       icon: IconlyLight.discovery,
                       children: [
-                        // Age dropdown (already updated above)
                         _isEditing
                             ? Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -297,7 +315,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Container(
                                 width: 10,
                                 height: 10,
-                                decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle),
+                                decoration: const BoxDecoration(
+                                  color: Colors.grey,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -337,7 +358,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Container(
                                 width: 10,
                                 height: 10,
-                                decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle),
+                                decoration: const BoxDecoration(
+                                  color: Colors.grey,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -377,8 +401,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
-                    if (_isEditing)
-                      const SizedBox(height: 16),
+                    if (_isEditing) const SizedBox(height: 16),
                     if (_isEditing)
                       SaveButton(
                         onPressed: () => _saveProfile(userProfile),

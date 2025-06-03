@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:exe202_mobile_app/api/profile_api.dart';
+import 'ingredients_dropdown_dialog.dart';
 
 // Profile Avatar Widget
 class ProfileAvatar extends StatefulWidget {
@@ -325,8 +326,9 @@ class SaveButton extends StatelessWidget {
 // Allergies Dialog Widget
 class AllergiesDialog extends StatefulWidget {
   final List<String> initialAllergies;
+  final GlobalKey<NavigatorState> navigatorKey; // Add navigatorKey parameter
 
-  const AllergiesDialog({required this.initialAllergies, super.key});
+  const AllergiesDialog({required this.initialAllergies, required this.navigatorKey, super.key});
 
   @override
   State<AllergiesDialog> createState() => _AllergiesDialogState();
@@ -334,71 +336,123 @@ class AllergiesDialog extends StatefulWidget {
 
 class _AllergiesDialogState extends State<AllergiesDialog> {
   late List<String> _selectedAllergies;
-  late Future<List<String>> _ingredientTypesFuture;
 
   @override
   void initState() {
     super.initState();
     _selectedAllergies = List.from(widget.initialAllergies);
-    _ingredientTypesFuture = ProfileApi().fetchIngredientTypes();
-  }
-
-  void _toggleAllergy(String allergy) {
-    setState(() {
-      if (_selectedAllergies.contains(allergy)) {
-        _selectedAllergies.remove(allergy);
-      } else {
-        _selectedAllergies.add(allergy);
-      }
-    });
   }
 
   @override
   Widget build(BuildContext context) {
+    print('Building AllergiesDialog with initial allergies: $_selectedAllergies');
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 60,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.orangeAccent, Colors.white],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(15),
-                topRight: Radius.circular(15),
-              ),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: Navigator(
+              initialRoute: 'ingredientTypes',
+              onGenerateRoute: (settings) {
+                if (settings.name == 'ingredientTypes') {
+                  return PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) => _IngredientTypesScreen(
+                      selectedAllergies: _selectedAllergies,
+                      onAllergiesChanged: (allergies) {
+                        setState(() {
+                          _selectedAllergies = allergies;
+                        });
+                      },
+                      onClose: () {
+                        print('Closing dialog');
+                        Navigator.of(widget.navigatorKey.currentContext ?? context).pop();
+                      },
+                      onSave: () {
+                        print('Saving and closing dialog');
+                        Navigator.of(widget.navigatorKey.currentContext ?? context).pop(_selectedAllergies);
+                      },
+                      navigatorKey: widget.navigatorKey, // Pass navigatorKey
+                    ),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return child; // No transition for initial route
+                    },
+                  );
+                }
+                return null;
+              },
             ),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      'Allergies',
-                      style: GoogleFonts.lobster(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IngredientTypesScreen extends StatelessWidget {
+  final List<String> selectedAllergies;
+  final ValueChanged<List<String>> onAllergiesChanged;
+  final VoidCallback onClose;
+  final VoidCallback onSave;
+  final GlobalKey<NavigatorState> navigatorKey; // Add navigatorKey parameter
+
+  const _IngredientTypesScreen({
+    required this.selectedAllergies,
+    required this.onAllergiesChanged,
+    required this.onClose,
+    required this.onSave,
+    required this.navigatorKey, // Require navigatorKey
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    print('Building _IngredientTypesScreen with selected allergies: $selectedAllergies');
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 60,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.orangeAccent, Colors.white],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(15),
+              topRight: Radius.circular(15),
+            ),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 48), // Space for alignment
+              Expanded(
+                child: Center(
+                  child: Text(
+                    'Allergies',
+                    style: GoogleFonts.lobster(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
                 ),
-                const SizedBox(width: 48), // Space for alignment with back button
-              ],
-            ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.black),
+                onPressed: () {
+                  print('X button pressed');
+                  onClose();
+                },
+              ),
+            ],
           ),
-          Padding(
+        ),
+        Flexible(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -413,11 +467,11 @@ class _AllergiesDialogState extends State<AllergiesDialog> {
                     children: [
                       Expanded(
                         child: Text(
-                          _selectedAllergies.isEmpty
+                          selectedAllergies.isEmpty
                               ? 'All products'
-                              : _selectedAllergies.join(', '),
+                              : selectedAllergies.join(', '),
                           style: TextStyle(
-                            color: _selectedAllergies.isEmpty ? Colors.grey : Colors.black,
+                            color: selectedAllergies.isEmpty ? Colors.grey : Colors.black,
                             fontSize: 16,
                           ),
                         ),
@@ -432,8 +486,8 @@ class _AllergiesDialogState extends State<AllergiesDialog> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                FutureBuilder<List<String>>(
-                  future: _ingredientTypesFuture,
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: ProfileApi().fetchIngredientTypes(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -444,13 +498,22 @@ class _AllergiesDialogState extends State<AllergiesDialog> {
                       return Wrap(
                         spacing: 8.0,
                         runSpacing: 8.0,
-                        children: ingredientTypes.map((ingredient) {
-                          final isSelected = _selectedAllergies.contains(ingredient);
+                        children: ingredientTypes.map((type) {
                           return ChoiceChip(
-                            label: Text(ingredient),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              _toggleAllergy(ingredient);
+                            label: Text(type['typeName']),
+                            selected: false,
+                            onSelected: (selected) async {
+                              final updatedAllergies = await showDialog<List<String>>(
+                                context: context,
+                                builder: (context) => IngredientsDropdownDialog(
+                                  typeId: type['ingredientTypeId'] as int,
+                                  typeName: type['typeName'],
+                                  initialSelectedAllergies: selectedAllergies,
+                                ),
+                              );
+                              if (updatedAllergies != null) {
+                                onAllergiesChanged(updatedAllergies);
+                              }
                             },
                             selectedColor: Colors.blue.withOpacity(0.2),
                             backgroundColor: Colors.grey[200],
@@ -467,7 +530,8 @@ class _AllergiesDialogState extends State<AllergiesDialog> {
                   alignment: Alignment.center,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context, _selectedAllergies);
+                      print('Confirm button pressed');
+                      onSave();
                     },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
@@ -489,8 +553,8 @@ class _AllergiesDialogState extends State<AllergiesDialog> {
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

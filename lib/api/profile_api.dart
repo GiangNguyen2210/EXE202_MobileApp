@@ -55,7 +55,7 @@ class ProfileApi {
   Future<void> updateUserProfile(UserProfileResponse profile) async {
     final String? token = await storage.read(key: 'jwt_token');
     final response = await http.put(
-      Uri.parse('$baseUrl/UserProfile/userProfile/${profile.upId}'),
+      Uri.parse('$baseUrl/UserProfile/${profile.upId}'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
@@ -80,10 +80,10 @@ class ProfileApi {
     }
   }
 
-  Future<List<String>> fetchIngredientTypes() async {
+  Future<List<Map<String, dynamic>>> fetchIngredientTypes() async {
     final String? token = await storage.read(key: 'jwt_token');
     final response = await http.get(
-      Uri.parse('$baseUrl/ingredientTypes'),
+      Uri.parse('$baseUrl/Ingredients/ingredient-types'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
@@ -91,10 +91,33 @@ class ProfileApi {
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.cast<String>();
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<dynamic> items = data['items'];
+      return items.map((item) => {
+        'ingredientTypeId': item['ingredientTypeId'] as int,
+        'typeName': item['typeName'] as String,
+      }).toList();
     } else {
       throw Exception('Failed to load ingredient types: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<List<String>> fetchIngredientsByType(int ingredientTypeId) async {
+    final String? token = await storage.read(key: 'jwt_token');
+    final response = await http.get(
+      Uri.parse('$baseUrl/Ingredients/ingredients?typeId=$ingredientTypeId'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<dynamic> items = data['items'];
+      return items.map((item) => item['ingredientName'] as String).toList();
+    } else {
+      throw Exception('Failed to load ingredients: ${response.statusCode} - ${response.body}');
     }
   }
 }

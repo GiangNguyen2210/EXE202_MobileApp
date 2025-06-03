@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/home_screen_widget/category_chip_widget.dart';
-import '../widgets/home_screen_widget/recipe_card_widget.dart';
+import '../widgets/home_screen_widgets/category_chip_widget.dart';
+import '../widgets/home_screen_widgets/recipe_card_widget.dart';
 import '../widgets/app_bottom_navigation.dart';
 
 class HomeScreen extends StatefulWidget {
