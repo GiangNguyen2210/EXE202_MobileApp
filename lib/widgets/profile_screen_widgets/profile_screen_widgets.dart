@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:exe202_mobile_app/api/profile_api.dart';
 import 'ingredients_dropdown_dialog.dart';
+import 'health_conditions_dropdown_dialog.dart';
 
 // Profile Avatar Widget
 class ProfileAvatar extends StatefulWidget {
@@ -326,7 +327,7 @@ class SaveButton extends StatelessWidget {
 // Allergies Dialog Widget
 class AllergiesDialog extends StatefulWidget {
   final List<String> initialAllergies;
-  final GlobalKey<NavigatorState> navigatorKey; // Add navigatorKey parameter
+  final GlobalKey<NavigatorState> navigatorKey;
 
   const AllergiesDialog({required this.initialAllergies, required this.navigatorKey, super.key});
 
@@ -374,7 +375,7 @@ class _AllergiesDialogState extends State<AllergiesDialog> {
                         print('Saving and closing dialog');
                         Navigator.of(widget.navigatorKey.currentContext ?? context).pop(_selectedAllergies);
                       },
-                      navigatorKey: widget.navigatorKey, // Pass navigatorKey
+                      navigatorKey: widget.navigatorKey,
                     ),
                     transitionsBuilder: (context, animation, secondaryAnimation, child) {
                       return child; // No transition for initial route
@@ -396,14 +397,14 @@ class _IngredientTypesScreen extends StatelessWidget {
   final ValueChanged<List<String>> onAllergiesChanged;
   final VoidCallback onClose;
   final VoidCallback onSave;
-  final GlobalKey<NavigatorState> navigatorKey; // Add navigatorKey parameter
+  final GlobalKey<NavigatorState> navigatorKey;
 
   const _IngredientTypesScreen({
     required this.selectedAllergies,
     required this.onAllergiesChanged,
     required this.onClose,
     required this.onSave,
-    required this.navigatorKey, // Require navigatorKey
+    required this.navigatorKey,
   });
 
   @override
@@ -476,7 +477,7 @@ class _IngredientTypesScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const Icon(Icons.search, color: Colors.grey),
+                      const Icon(Icons.sd_card_alert, color: Colors.redAccent),
                     ],
                   ),
                 ),
@@ -531,6 +532,241 @@ class _IngredientTypesScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       print('Confirm button pressed');
+                      onSave();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      backgroundColor: Colors.blue,
+                    ),
+                    child: const Text(
+                      'Confirm',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Health Conditions Dialog Widget
+class HealthConditionsDialog extends StatefulWidget {
+  final List<Map<String, dynamic>> initialHealthConditions;
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  const HealthConditionsDialog({required this.initialHealthConditions, required this.navigatorKey, super.key});
+
+  @override
+  State<HealthConditionsDialog> createState() => _HealthConditionsDialogState();
+}
+
+class _HealthConditionsDialogState extends State<HealthConditionsDialog> {
+  late List<Map<String, dynamic>> _selectedHealthConditions;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedHealthConditions = List.from(widget.initialHealthConditions);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    print('Building HealthConditionsDialog with initial conditions: $_selectedHealthConditions');
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: Navigator(
+              initialRoute: 'healthConditionTypes',
+              onGenerateRoute: (settings) {
+                if (settings.name == 'healthConditionTypes') {
+                  return PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) => _HealthConditionTypesScreen(
+                      selectedHealthConditions: _selectedHealthConditions,
+                      onHealthConditionsChanged: (conditions) {
+                        setState(() {
+                          _selectedHealthConditions = conditions;
+                        });
+                      },
+                      onClose: () {
+                        print('Closing health conditions dialog');
+                        Navigator.of(widget.navigatorKey.currentContext ?? context).pop();
+                      },
+                      onSave: () {
+                        print('Saving and closing health conditions dialog');
+                        Navigator.of(widget.navigatorKey.currentContext ?? context).pop(_selectedHealthConditions);
+                      },
+                      navigatorKey: widget.navigatorKey,
+                    ),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return child; // No transition for initial route
+                    },
+                  );
+                }
+                return null;
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HealthConditionTypesScreen extends StatelessWidget {
+  final List<Map<String, dynamic>> selectedHealthConditions;
+  final ValueChanged<List<Map<String, dynamic>>> onHealthConditionsChanged;
+  final VoidCallback onClose;
+  final VoidCallback onSave;
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  const _HealthConditionTypesScreen({
+    required this.selectedHealthConditions,
+    required this.onHealthConditionsChanged,
+    required this.onClose,
+    required this.onSave,
+    required this.navigatorKey,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    print('Building _HealthConditionTypesScreen with selected conditions: $selectedHealthConditions');
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 60,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.orangeAccent, Colors.white],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(15),
+              topRight: Radius.circular(15),
+            ),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 48), // Space for alignment
+              Expanded(
+                child: Center(
+                  child: Text(
+                    'Health Conditions',
+                    style: GoogleFonts.lobster(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.black),
+                onPressed: () {
+                  print('X button pressed in health conditions dialog');
+                  onClose();
+                },
+              ),
+            ],
+          ),
+        ),
+        Flexible(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          selectedHealthConditions.isEmpty
+                              ? 'No conditions selected'
+                              : selectedHealthConditions.map((c) => c['condition']).join(', '),
+                          style: TextStyle(
+                            color: selectedHealthConditions.isEmpty ? Colors.grey : Colors.black,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.search, color: Colors.grey),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Health Condition Types',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                FutureBuilder<List<String>>(
+                  future: ProfileApi().fetchHealthConditionTypes(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    } else if (snapshot.hasData) {
+                      final conditionTypes = snapshot.data!;
+                      return Wrap(
+                        spacing: 8.0,
+                        runSpacing: 8.0,
+                        children: conditionTypes.map((type) {
+                          return ChoiceChip(
+                            label: Text(type),
+                            selected: false,
+                            onSelected: (selected) async {
+                              final updatedConditions = await showDialog<List<Map<String, dynamic>>>(
+                                context: context,
+                                builder: (context) => HealthConditionsDropdownDialog(
+                                  typeName: type,
+                                  initialSelectedHealthConditions: selectedHealthConditions,
+                                ),
+                              );
+                              if (updatedConditions != null) {
+                                onHealthConditionsChanged(updatedConditions);
+                              }
+                            },
+                            selectedColor: Colors.blue.withOpacity(0.2),
+                            backgroundColor: Colors.grey[200],
+                          );
+                        }).toList(),
+                      );
+                    } else {
+                      return const Center(child: Text('No condition types available'));
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.center,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      print('Confirm button pressed in health conditions dialog');
                       onSave();
                     },
                     style: ElevatedButton.styleFrom(

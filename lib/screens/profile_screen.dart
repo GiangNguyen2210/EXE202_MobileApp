@@ -19,19 +19,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
   late TextEditingController _fullNameController;
   late TextEditingController _usernameController;
-  int? _selectedAge;
-  String? _selectedGender;
+  int? _selectedAge; // Moved initialization to initState
+  String? _selectedGender; // Moved initialization to initState
   late TextEditingController _emailController;
   List<TextEditingController> _allergyControllers = [];
   List<TextEditingController> _conditionControllers = [];
   List<String> _selectedAllergies = [];
+  List<Map<String, dynamic>> _selectedHealthConditions = [];
 
   @override
   void initState() {
     super.initState();
     print('Fetching user profile...');
     _userProfileFuture = ProfileApi().fetchUserProfile(1).then((profile) {
-      _selectedAllergies = List.from(profile.allergies); // Initialize once
+      _selectedAge = profile.age; // Initialize once with fetched data
+      _selectedGender = profile.gender; // Initialize once with fetched data
+      _selectedAllergies = List.from(profile.allergies ?? []);
+      _selectedHealthConditions = profile.healthConditions.isNotEmpty
+          ? profile.healthConditions.map((hc) => {'condition': hc.condition, 'status': hc.status}).toList()
+          : [];
+      print('Initial health conditions from API: $_selectedHealthConditions');
       return profile;
     });
   }
@@ -55,7 +62,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _isEditing = !_isEditing;
       if (!_isEditing) {
         _userProfileFuture = ProfileApi().fetchUserProfile(1).then((profile) {
-          _selectedAllergies = List.from(profile.allergies); // Reinitialize on discard
+          _selectedAge = profile.age; // Reset to fetched data when discarding
+          _selectedGender = profile.gender; // Reset to fetched data when discarding
+          _selectedAllergies = List.from(profile.allergies ?? []);
+          _selectedHealthConditions = profile.healthConditions.isNotEmpty
+              ? profile.healthConditions.map((hc) => {'condition': hc.condition, 'status': hc.status}).toList()
+              : [];
+          print('Reset health conditions: $_selectedHealthConditions');
           return profile;
         });
       }
@@ -84,22 +97,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fullName: _fullNameController.text,
         username: _usernameController.text.isEmpty ? null : _usernameController.text,
         age: _selectedAge ?? userProfile.age,
-        gender: _selectedGender ?? userProfile.gender,
+        gender: _selectedGender ?? userProfile.gender ?? '', // Ensure gender is never null
         allergies: _selectedAllergies,
-        healthConditions: _conditionControllers.map((c) => c.text).where((t) => t.isNotEmpty).toList(),
+        healthConditions: _selectedHealthConditions.map((hc) => HealthCondition(condition: hc['condition'] ?? '', status: hc['status'])).toList(),
         userId: userProfile.userId,
         email: _emailController.text,
         role: userProfile.role,
         userPicture: userProfile.userPicture,
       );
 
-      await ProfileApi().updateUserProfile(updatedProfile);
+      print('Sending profile update with age: ${updatedProfile.age}, gender: ${updatedProfile.gender}');
+
+      final serverUpdatedProfile = await ProfileApi().updateUserProfile(updatedProfile);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),
       );
+      print('Received updated profile from server: age: ${serverUpdatedProfile.age}, gender: ${serverUpdatedProfile.gender}');
       setState(() {
         _isEditing = false;
-        _userProfileFuture = Future.value(updatedProfile);
+        _userProfileFuture = Future.value(serverUpdatedProfile);
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -122,6 +138,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _selectedAllergies = result;
       });
     }
+  }
+
+  Future<void> _showHealthConditionsDialog(BuildContext context, List<Map<String, dynamic>> initialHealthConditions) async {
+    final result = await showDialog<List<Map<String, dynamic>>>(
+      context: context,
+      builder: (context) => HealthConditionsDialog(
+        initialHealthConditions: initialHealthConditions,
+        navigatorKey: widget.navigatorKey,
+      ),
+    );
+
+    if (result != null) {
+      print('Received health conditions from dialog: $result');
+      setState(() {
+        _selectedHealthConditions = result;
+        print('Updated health conditions in state: $_selectedHealthConditions');
+      });
+    }
+  }
+
+  Widget _buildAllergyChip(String allergy) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              allergy,
+              style: TextStyle(color: Colors.grey[800], fontSize: 14),
+            ),
+            const SizedBox(width: 4.0),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedAllergies.remove(allergy);
+                });
+              },
+              child: Icon(
+                IconlyLight.closeSquare,
+                size: 16,
+                color: Colors.redAccent,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHealthConditionChip(Map<String, dynamic> condition) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              condition['condition'] ?? 'Unknown',
+              style: TextStyle(color: Colors.grey[800], fontSize: 14),
+            ),
+            const SizedBox(width: 4.0),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedHealthConditions.remove(condition);
+                });
+              },
+              child: Icon(
+                IconlyLight.closeSquare,
+                size: 16,
+                color: Colors.redAccent,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -208,14 +314,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final userProfile = snapshot.data!;
             _fullNameController = TextEditingController(text: userProfile.fullName);
             _usernameController = TextEditingController(text: userProfile.username ?? 'N/A');
-            _selectedAge = userProfile.age;
-            _selectedGender = userProfile.gender;
             _emailController = TextEditingController(text: userProfile.email);
             _allergyControllers = userProfile.allergies
                 .map((allergy) => TextEditingController(text: allergy))
                 .toList();
             _conditionControllers = userProfile.healthConditions
-                .map((condition) => TextEditingController(text: condition))
+                .map((condition) => TextEditingController(text: condition.condition))
                 .toList();
 
             print('Building ProfileAvatar');
@@ -248,7 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         StatCard(title: 'Allergies', value: _selectedAllergies.length.toString()),
-                        StatCard(title: 'Conditions', value: userProfile.healthConditions.length.toString()),
+                        StatCard(title: 'Conditions', value: _selectedHealthConditions.length.toString()),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -265,11 +369,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               border: Border.all(color: Colors.grey),
                               borderRadius: BorderRadius.circular(5),
                             ),
-                            child: Text(
-                              _selectedAllergies.isEmpty
-                                  ? 'No allergies selected'
-                                  : _selectedAllergies.join(', '),
+                            child: _selectedAllergies.isEmpty
+                                ? Text(
+                              'No allergies selected',
                               style: TextStyle(color: Colors.grey[800], fontSize: 14),
+                            )
+                                : Wrap(
+                              spacing: 8.0,
+                              runSpacing: 4.0,
+                              children: _selectedAllergies.map((allergy) => _buildAllergyChip(allergy)).toList(),
                             ),
                           ),
                         )
@@ -290,17 +398,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     SectionCard(
                       title: 'HEALTH CONDITIONS',
                       icon: IconlyLight.heart,
-                      children: _conditionControllers
-                          .asMap()
-                          .entries
-                          .map((entry) => ListItem(
-                        title: entry.value.text,
-                        dotColor: Colors.grey,
-                        subtitle: entry.value.text == 'Asthma' ? 'Moderate' : 'Controlled',
-                        isEditing: _isEditing,
-                        controller: entry.value,
-                      ))
-                          .toList(),
+                      children: [
+                        _isEditing
+                            ? GestureDetector(
+                          onTap: () => _showHealthConditionsDialog(context, _selectedHealthConditions),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: _selectedHealthConditions.isEmpty
+                                ? Text(
+                              'No conditions selected',
+                              style: TextStyle(color: Colors.grey[800], fontSize: 14),
+                            )
+                                : Wrap(
+                              spacing: 8.0,
+                              runSpacing: 4.0,
+                              children: _selectedHealthConditions.map((condition) => _buildHealthConditionChip(condition)).toList(),
+                            ),
+                          ),
+                        )
+                            : Column(
+                          children: _selectedHealthConditions
+                              .asMap()
+                              .entries
+                              .map((entry) => ListItem(
+                            title: entry.value['condition'] ?? 'Unknown',
+                            dotColor: Colors.grey,
+                            isEditing: false,
+                          ))
+                              .toList(),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     SectionCard(

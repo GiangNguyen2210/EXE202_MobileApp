@@ -46,15 +46,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       debugPrint('  fullName: ${userProfile.fullName}');
       debugPrint('  email: ${userProfile.email}');
       debugPrint('  phoneNumber: ${userProfile.phoneNumber}');
-      debugPrint('  subcriptionId: ${userProfile.subcriptionId}');
+      debugPrint('  subcriptionId: ${userProfile.subscriptionId}');
       debugPrint('  endDate: ${userProfile.endDate}');
 
       // Logic kiểm tra subscription
-      if (userProfile.subcriptionId != 1 &&
+      if (userProfile.subscriptionId != 1 &&
           userProfile.endDate != null &&
           userProfile.endDate!.isAfter(DateTime.now())) {
-        if ((userProfile.subcriptionId == 2 && plan == 'Basic') ||
-            (userProfile.subcriptionId == 3 && plan == 'Premium')) {
+        if ((userProfile.subscriptionId == 2 && plan == 'Basic') ||
+            (userProfile.subscriptionId == 3 && plan == 'Premium')) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Bạn đang sử dụng gói $plan')),
           );
@@ -114,16 +114,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             debugPrint('  fullName: ${userProfile.fullName}');
             debugPrint('  email: ${userProfile.email}');
             debugPrint('  phoneNumber: ${userProfile.phoneNumber}');
-            debugPrint('  subcriptionId: ${userProfile.subcriptionId}');
+            debugPrint('  subcriptionId: ${userProfile.subscriptionId}');
             debugPrint('  endDate: ${userProfile.endDate}');
 
-            final isBasicSubscribed = userProfile.subcriptionId == 2 &&
+            final isBasicSubscribed = userProfile.subscriptionId == 2 &&
                 userProfile.endDate != null &&
                 userProfile.endDate!.isAfter(DateTime.now());
-            final isPremiumSubscribed = userProfile.subcriptionId == 3 &&
+            final isPremiumSubscribed = userProfile.subscriptionId == 3 &&
                 userProfile.endDate != null &&
                 userProfile.endDate!.isAfter(DateTime.now());
-            final subscriptionStatus = userProfile.subcriptionId == 1
+            final subscriptionStatus = userProfile.subscriptionId == 1
                 ? 'Free'
                 : isBasicSubscribed
                 ? 'Basic (Hết hạn: ${DateFormat('dd/MM/yyyy').format(userProfile.endDate!)})'

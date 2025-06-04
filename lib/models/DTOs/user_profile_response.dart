@@ -1,3 +1,27 @@
+class HealthCondition {
+  final String condition;
+  final String? status;
+
+  HealthCondition({
+    required this.condition,
+    this.status,
+  });
+
+  factory HealthCondition.fromJson(Map<String, dynamic> json) {
+    return HealthCondition(
+      condition: json['condition'] ?? '',
+      status: json['status'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'condition': condition,
+      'status': status,
+    };
+  }
+}
+
 class UserProfileResponse {
   final int upId;
   final String fullName;
@@ -5,13 +29,13 @@ class UserProfileResponse {
   final int? age;
   final String? gender;
   final List<String> allergies;
-  final List<String> healthConditions;
+  final List<HealthCondition> healthConditions;
   final String userId;
   final String email;
   final String? role;
   final String? userPicture;
   final String? phoneNumber;
-  final int? subcriptionId;
+  final int? subscriptionId;
   final DateTime? endDate;
 
   UserProfileResponse({
@@ -27,7 +51,7 @@ class UserProfileResponse {
     this.role,
     this.userPicture,
     this.phoneNumber,
-    this.subcriptionId,
+    this.subscriptionId,
     this.endDate,
   });
 
@@ -39,14 +63,35 @@ class UserProfileResponse {
       age: json['age'],
       gender: json['gender'],
       allergies: List<String>.from(json['allergies'] ?? []),
-      healthConditions: List<String>.from(json['healthConditions'] ?? []),
+      healthConditions: (json['healthConditions'] as List<dynamic>? ?? [])
+          .map((item) => HealthCondition(condition: item is Map ? (item['condition'] ?? item.toString()) : item.toString(), status: null))
+          .toList(),
       userId: json['userId'] ?? '',
       email: json['email'] ?? '',
       role: json['role'],
       userPicture: json['userPicture'],
-      phoneNumber: json['phoneNumber'], // Thêm trường
-      subcriptionId: json['subcriptionId'], // Thêm trường
+      phoneNumber: json['phoneNumber'],
+      subscriptionId: json['subscriptionId'],
       endDate: json['endDate'] != null ? DateTime.tryParse(json['endDate']) : null,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'uPId': upId,
+      'fullName': fullName,
+      'username': username,
+      'age': age,
+      'gender': gender,
+      'allergies': allergies,
+      'healthConditions': healthConditions.map((hc) => hc.toJson()).toList(),
+      'userId': userId,
+      'email': email,
+      'role': role,
+      'userPicture': userPicture,
+      'phoneNumber': phoneNumber,
+      'subscriptionId': subscriptionId,
+      'endDate': endDate?.toIso8601String(),
+    };
   }
 }
