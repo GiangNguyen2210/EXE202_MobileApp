@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../widgets/home_screen_widgets/category_chip_widget.dart';
 import '../widgets/home_screen_widgets/recipe_card_widget.dart';
 import '../widgets/app_bottom_navigation.dart';
+import '../api/recipe_api.dart';
+import '../models/DTOs/recipe_response.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,8 +21,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _animationController;
   late Animation<Offset> _navBarAnimation;
   int _currentPage = 0;
-  final int _recipesPerPage = 14; // 14 recipes per page (7 rows of 2)
-  final List<ScrollController> _scrollControllers = []; // One ScrollController per page
+  final int _recipesPerPage = 10;
+  final List<ScrollController> _scrollControllers = [];
+  late Future<List<RecipeResponse>> _fetchRecipesFuture;
+  String? _selectedCategory;
+  late int _totalPages = 1;
+  List<RecipeItem> _allRecipes = [];
 
   @override
   void initState() {
@@ -37,17 +43,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       curve: Curves.easeInOut,
     ));
 
-    // Initialize ScrollControllers for each page
-    final int totalPages = (42 / _recipesPerPage).ceil(); // Based on 42 recipes
-    for (int i = 0; i < totalPages; i++) {
-      _scrollControllers.add(ScrollController());
-    }
-
+    _fetchRecipesFuture = _preloadRecipes(1);
     _pageController.addListener(() {
-      setState(() {
-        _currentPage = _pageController.page?.round() ?? 0;
-      });
-      _scrollToTop(); // Auto-scroll to top on page change
+      final newPage = _pageController.page?.round() ?? 0;
+      if (newPage != _currentPage) {
+        setState(() {
+          _currentPage = newPage;
+        });
+        _scrollToTop();
+        _preloadRecipes(_currentPage + 1);
+      }
     });
   }
 
@@ -71,21 +76,41 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Simulated recipe data (42 recipes for 3 pages)
-    final List<Map<String, String>> allRecipes = List.generate(42, (index) {
-      return {
-        'title': 'Recipe ${index + 1}',
-        'time': '${15 + (index % 30)} mins',
-        'rating': '★★★★☆',
-        'author': 'By Chef ${index % 5 + 1}',
-        'imageUrl': 'https://via.placeholder.com/150',
-      };
+  Future<List<RecipeResponse>> _preloadRecipes(int currentPage) async {
+    final api = RecipeApi();
+    final response = await api.fetchRecipes(page: 1, pageSize: _recipesPerPage, mealName: _selectedCategory?.toLowerCase());
+    setState(() {
+      _totalPages = (response.totalCount / _recipesPerPage).ceil();
     });
 
-    final int totalPages = (allRecipes.length / _recipesPerPage).ceil();
+    final maxPage = _totalPages;
 
+    int startPage = (currentPage - 2).clamp(1, maxPage);
+    int endPage = (currentPage + 2).clamp(1, maxPage);
+
+    List<Future<RecipeResponse>> futures = [];
+    for (int page = startPage; page <= endPage; page++) {
+      futures.add(api.fetchRecipes(page: page, pageSize: _recipesPerPage, mealName: _selectedCategory?.toLowerCase()));
+    }
+
+    final responses = await Future.wait(futures);
+    setState(() {
+      _allRecipes = responses.expand((response) => response.items).toList();
+    });
+    return responses;
+  }
+
+  void _onCategorySelected(String category) {
+    setState(() {
+      _selectedCategory = category == 'All Recipes' ? null : category;
+      _currentPage = 0; // Reset current page to 0
+      _pageController.jumpToPage(0); // Jump to page 1
+      _fetchRecipesFuture = _preloadRecipes(1);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
@@ -140,10 +165,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -158,10 +180,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 borderRadius: BorderRadius.circular(8.0),
                                 borderSide: const BorderSide(color: Colors.grey),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14.0,
-                                vertical: 8.0,
-                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
                             ),
                             onSubmitted: (value) {
                               setState(() {
@@ -195,79 +214,115 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      const CategoryChip(label: 'All Recipes', isSelected: true),
+                      CategoryChip(
+                        label: 'All Recipes',
+                        isSelected: _selectedCategory == null,
+                        onTap: () => _onCategorySelected('All Recipes'),
+                      ),
                       const SizedBox(width: 8),
-                      const CategoryChip(label: 'Breakfast'),
+                      CategoryChip(
+                        label: 'Breakfast',
+                        isSelected: _selectedCategory == 'Breakfast',
+                        onTap: () => _onCategorySelected('Breakfast'),
+                      ),
                       const SizedBox(width: 8),
-                      const CategoryChip(label: 'Lunch'),
+                      CategoryChip(
+                        label: 'Lunch',
+                        isSelected: _selectedCategory == 'Lunch',
+                        onTap: () => _onCategorySelected('Lunch'),
+                      ),
                       const SizedBox(width: 8),
-                      const CategoryChip(label: 'Dinner'),
+                      CategoryChip(
+                        label: 'Dinner',
+                        isSelected: _selectedCategory == 'Dinner',
+                        onTap: () => _onCategorySelected('Dinner'),
+                      ),
                       const SizedBox(width: 8),
-                      const CategoryChip(label: 'Snacks'),
+                      CategoryChip(
+                        label: 'Snacks',
+                        isSelected: _selectedCategory == 'Snacks',
+                        onTap: () => _onCategorySelected('Snacks'),
+                      ),
                     ],
                   ),
                 ),
               ),
               Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: totalPages,
-                  itemBuilder: (context, pageIndex) {
-                    final startIndex = pageIndex * _recipesPerPage;
-                    final endIndex = (startIndex + _recipesPerPage) > allRecipes.length
-                        ? allRecipes.length
-                        : (startIndex + _recipesPerPage);
-                    final pageRecipes = allRecipes.sublist(startIndex, endIndex);
+                child: FutureBuilder<List<RecipeResponse>>(
+                  future: _fetchRecipesFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(child: Text('No recipes available'));
+                    }
 
-                    return NotificationListener<ScrollNotification>(
-                      onNotification: (ScrollNotification notification) {
-                        if (notification is ScrollUpdateNotification) {
-                          if (notification.scrollDelta! > 0 && _isNavBarVisible) {
-                            setState(() {
-                              _isNavBarVisible = false;
-                            });
-                            _animationController.forward();
-                          } else if (notification.scrollDelta! < 0 && !_isNavBarVisible) {
-                            setState(() {
-                              _isNavBarVisible = true;
-                            });
-                            _animationController.reverse();
-                          }
-                        }
-                        return true;
-                      },
-                      child: SingleChildScrollView(
-                        controller: _scrollControllers[pageIndex],
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Column(
-                            children: [
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                  childAspectRatio: 0.65,
-                                ),
-                                itemCount: pageRecipes.length,
-                                itemBuilder: (context, index) {
-                                  final recipe = pageRecipes[index];
-                                  return RecipeCard(
-                                    title: recipe['title']!,
-                                    time: recipe['time']!,
-                                    rating: recipe['rating']!,
-                                    author: recipe['author']!,
-                                    imageUrl: recipe['imageUrl']!,
-                                  );
-                                },
+                    final recipes = _allRecipes;
+                    return PageView.builder(
+                      controller: _pageController,
+                      itemCount: _totalPages,
+                      itemBuilder: (context, pageIndex) {
+                        final startIndex = pageIndex * _recipesPerPage;
+                        final endIndex = (startIndex + _recipesPerPage) > recipes.length
+                            ? recipes.length
+                            : (startIndex + _recipesPerPage);
+                        final pageRecipes = recipes.sublist(startIndex, endIndex);
+
+                        return NotificationListener<ScrollNotification>(
+                          onNotification: (ScrollNotification notification) {
+                            if (notification is ScrollUpdateNotification) {
+                              if (notification.scrollDelta! > 0 && _isNavBarVisible) {
+                                setState(() {
+                                  _isNavBarVisible = false;
+                                });
+                                _animationController.forward();
+                              } else if (notification.scrollDelta! < 0 && !_isNavBarVisible) {
+                                setState(() {
+                                  _isNavBarVisible = true;
+                                });
+                                _animationController.reverse();
+                              }
+                            }
+                            return true;
+                          },
+                          child: SingleChildScrollView(
+                            controller: _scrollControllers.length > pageIndex
+                                ? _scrollControllers[pageIndex]
+                                : ScrollController(),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Column(
+                                children: [
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      crossAxisSpacing: 16,
+                                      mainAxisSpacing: 16,
+                                      childAspectRatio: 0.65,
+                                    ),
+                                    itemCount: pageRecipes.length,
+                                    itemBuilder: (context, index) {
+                                      final recipe = pageRecipes[index];
+                                      return RecipeCard(
+                                        title: recipe.recipeName,
+                                        time: '${recipe.timeEstimation} mins',
+                                        difficultyEstimation: recipe.difficultyEstimation,
+                                        mealName: recipe.mealName,
+                                        imageUrl: recipe.imageUrl,
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 48),
+                                ],
                               ),
-                              const SizedBox(height: 48),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -295,12 +350,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         : null,
                   ),
                   Text(
-                    'Page ${_currentPage + 1} of $totalPages',
+                    'Page ${_currentPage + 1} of $_totalPages',
                     style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   IconButton(
                     icon: const Icon(Icons.arrow_right, color: Colors.grey),
-                    onPressed: _currentPage < totalPages - 1
+                    onPressed: _currentPage < _totalPages - 1
                         ? () {
                       _pageController.nextPage(
                         duration: const Duration(milliseconds: 300),

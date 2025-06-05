@@ -97,7 +97,7 @@ class _MyAppState extends State<MyApp> {
       home: ProfileScreen(navigatorKey: _navigatorKey), // Pass navigatorKey
       initialRoute: '/profile',
       routes: {
-        '/profile': (context) => StreakScreen(), // Pass navigatorKey
+        '/profile': (context) => HomeScreen(), // Pass navigatorKey
       },
     );
   }
