@@ -37,6 +37,7 @@ class UserProfileResponse {
   final String? phoneNumber;
   final int? subscriptionId;
   final DateTime? endDate;
+  final int? streak; // Thêm field streak
 
   UserProfileResponse({
     required this.upId,
@@ -53,6 +54,7 @@ class UserProfileResponse {
     this.phoneNumber,
     this.subscriptionId,
     this.endDate,
+    this.streak = 0, // Giá trị mặc định
   });
 
   factory UserProfileResponse.fromJson(Map<String, dynamic> json) {
@@ -73,6 +75,7 @@ class UserProfileResponse {
       phoneNumber: json['phoneNumber'],
       subscriptionId: json['subscriptionId'],
       endDate: json['endDate'] != null ? DateTime.tryParse(json['endDate']) : null,
+      streak: json['streak'] ?? 0, // Thêm mapping cho streak
     );
   }
 
@@ -92,6 +95,7 @@ class UserProfileResponse {
       'phoneNumber': phoneNumber,
       'subscriptionId': subscriptionId,
       'endDate': endDate?.toIso8601String(),
+      'streak': streak, // Thêm vào toJson
     };
   }
 }

@@ -13,7 +13,7 @@ import 'screens/home_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/recipe_detail_screen.dart';
 import 'screens/notifications_screen.dart';
-
+import 'screens/streak_screen.dart'; // Thêm import
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
   runApp(const MyApp());
@@ -97,7 +97,7 @@ class _MyAppState extends State<MyApp> {
       home: ProfileScreen(navigatorKey: _navigatorKey), // Pass navigatorKey
       initialRoute: '/profile',
       routes: {
-        '/profile': (context) => ProfileScreen(navigatorKey: _navigatorKey), // Pass navigatorKey
+        '/profile': (context) => StreakScreen(), // Pass navigatorKey
       },
     );
   }
