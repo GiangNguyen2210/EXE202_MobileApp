@@ -93,12 +93,12 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      navigatorKey: _navigatorKey,
-      home: ProfileScreen(navigatorKey: _navigatorKey), // Pass navigatorKey
-      initialRoute: '/profile',
-      routes: {
-        '/profile': (context) => HomeScreen(), // Pass navigatorKey
-      },
+      // navigatorKey: _navigatorKey,
+      home: RecipeDetailScreen(), // Pass navigatorKey
+      // initialRoute: '/profile',
+      // routes: {
+      //   '/profile': (context) => HomeScreen(), // Pass navigatorKey
+      // },
     );
   }
 }
