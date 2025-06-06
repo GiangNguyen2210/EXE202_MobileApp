@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import '../api/recipe_detail_api.dart';
+import '../models/DTOs/recipe_detail_modal.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   const RecipeDetailScreen({super.key});
@@ -10,88 +13,67 @@ class RecipeDetailScreen extends StatefulWidget {
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
-  bool _isNavBarVisible = true; // Track visibility of the navigation bar
+  bool _isNavBarVisible = true;
   late ScrollController _scrollController;
+  late Future<RecipeDetail> _fetchRecipeFuture;
+  int _servings = 1;
+  YoutubePlayerController? _youtubeController;
+  bool _videoLoadFailed = false; // Track if video fails to load
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    final api = RecipeDetailApi();
+    _fetchRecipeFuture = api.fetchRecipeDetail(33);
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _youtubeController?.dispose();
     super.dispose();
   }
 
   void _onScrollNotification(ScrollNotification scrollInfo) {
     if (scrollInfo is ScrollUpdateNotification) {
-      // Check scroll direction
       if (scrollInfo.scrollDelta != null) {
-        if (scrollInfo.scrollDelta! > 0) {
-          // Scrolling down
-          if (_isNavBarVisible) {
-            setState(() {
-              _isNavBarVisible = false;
-            });
-          }
-        } else if (scrollInfo.scrollDelta! < 0) {
-          // Scrolling up
-          if (!_isNavBarVisible) {
-            setState(() {
-              _isNavBarVisible = true;
-            });
-          }
+        if (scrollInfo.scrollDelta! > 0 && _isNavBarVisible) {
+          setState(() => _isNavBarVisible = false);
+        } else if (scrollInfo.scrollDelta! < 0 && !_isNavBarVisible) {
+          setState(() => _isNavBarVisible = true);
         }
       }
     }
   }
 
+  String _getDifficultyStars(int difficulty) {
+    const filledStar = '★';
+    const emptyStar = '☆';
+    return 'Difficulty: ${filledStar * difficulty}${emptyStar * (5 - difficulty)}';
+  }
+
+  String _getNationWithFlag(String nation) {
+    final flagMap = {
+      'Viet Nam': '🇻🇳',
+      'Italy': '🇮🇹',
+      'France': '🇫🇷',
+      'USA': '🇺🇸',
+    };
+    final flag = flagMap[nation] ?? '';
+    return '$flag $nation';
+  }
+
+  void _updateServings(int change) {
+    setState(() {
+      _servings = (_servings + change).clamp(1, 10);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Retrieve the passed arguments
-    final args =
-        ModalRoute.of(context)!.settings.arguments as Map<String, String>?;
-
-    // Fallback values in case arguments are missing
-    final String title = args?['title'] ?? 'Unknown Recipe';
-    final String author = args?['author'] ?? 'Unknown Chef';
-    final String time = args?['time'] ?? '0 mins';
-    final String rating = args?['rating'] ?? '★★★★☆';
-    final String imageUrl =
-        args?['imageUrl'] ?? 'https://via.placeholder.com/150';
-    // Extract rating number (assuming rating is in format "★★★★☆")
-    final double ratingNumber =
-        double.tryParse(
-          rating.replaceAll('★', '').replaceAll('☆', '').trim(),
-        ) ??
-        4.8;
-
-    // Mock data for cooking steps
-    final List<String> cookingSteps = [
-      'Boil the pasta in salted water according to package instructions until al dente.',
-      'In a large pan, sauté minced garlic in butter until fragrant.',
-      'Add the guanciale or pancetta and cook until crispy.',
-      'Whisk the eggs with grated Pecorino Romano and Parmesan, then season with black pepper.',
-      'Drain the pasta, reserving some cooking water, and add it to the pan with the guanciale.',
-      'Remove the pan from heat, add the egg mixture, and toss quickly, adding reserved water as needed to create a creamy sauce.',
-      'Serve immediately with extra cheese and black pepper on top.',
-    ];
-
-    // Mock data for suggested recipes
-    final List<Map<String, String>> suggestedRecipes = [
-      {
-        'title': 'Creamy Pasta Alfredo',
-        'time': '25 mins',
-        'imageUrl': 'https://via.placeholder.com/150',
-      },
-      {
-        'title': 'Penne Arrabbiata',
-        'time': '20 mins',
-        'imageUrl': 'https://via.placeholder.com/150',
-      },
-    ];
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    final int recipeId = args?['recipeId'] ?? 33;
 
     return Scaffold(
       appBar: AppBar(
@@ -116,297 +98,341 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ),
         ],
       ),
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (scrollInfo) {
-          _onScrollNotification(scrollInfo);
-          return false; // Return false to allow the notification to continue propagating
-        },
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image with play button overlay
-              Stack(
+      body: FutureBuilder<RecipeDetail>(
+        future: _fetchRecipeFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return const Center(child: Text('Failed to load recipe detail'));
+          } else if (!snapshot.hasData) {
+            return const Center(child: Text('No recipe data available'));
+          }
+
+          final recipe = snapshot.data!;
+          final String title = recipe.recipeName;
+          final String time = "${recipe.timeEstimation} mins";
+          final String difficultyStars = _getDifficultyStars(recipe.difficultyEstimation.clamp(1, 5));
+          final String nationWithFlag = _getNationWithFlag(recipe.nation);
+
+          // Initialize YouTube player controller if not failed
+          if (_youtubeController == null && !_videoLoadFailed) {
+            final videoId = YoutubePlayer.convertUrlToId(recipe.instructionVideoLink);
+            if (videoId != null) {
+              _youtubeController = YoutubePlayerController(
+                initialVideoId: videoId,
+                flags: const YoutubePlayerFlags(
+                  autoPlay: false,
+                  mute: false,
+                ),
+              )..addListener(() {
+                // Listen for errors in video loading
+                if (_youtubeController!.value.hasError) {
+                  setState(() {
+                    _videoLoadFailed = true;
+                    _youtubeController?.dispose();
+                    _youtubeController = null;
+                  });
+                }
+              });
+            } else {
+              setState(() {
+                _videoLoadFailed = true;
+              });
+            }
+          }
+
+          return NotificationListener<ScrollNotification>(
+            onNotification: (scrollInfo) {
+              _onScrollNotification(scrollInfo);
+              return false;
+            },
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.network(
-                    imageUrl,
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(height: 200, color: Colors.grey[300]);
-                    },
-                  ),
-                  Positioned.fill(
-                    child: Center(
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.play_circle_filled,
-                          color: Colors.white,
-                          size: 50,
+                  // Video or Fallback Image
+                  if (_youtubeController != null && !_videoLoadFailed)
+                    SizedBox(
+                      height: 200, // Fixed height to match previous image
+                      width: double.infinity,
+                      child: YoutubePlayer(
+                        controller: _youtubeController!,
+                        showVideoProgressIndicator: true,
+                        progressIndicatorColor: Colors.red,
+                        progressColors: const ProgressBarColors(
+                          playedColor: Colors.red,
+                          handleColor: Colors.redAccent,
                         ),
-                        onPressed: () {},
+                        bottomActions: [
+                          CurrentPosition(),
+                          ProgressBar(isExpanded: true),
+                          RemainingDuration(),
+                          PlaybackSpeedButton(),
+                        ],
+                        onReady: () {
+                          // Video player is ready
+                        },
+                        onEnded: (metaData) {
+                          _youtubeController?.seekTo(Duration.zero);
+                        },
                       ),
-                    ),
-                  ),
-                  const Positioned(
-                    bottom: 10,
-                    right: 10,
-                    child: Text(
-                      '12:45',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ),
-                ],
-              ),
-              // Recipe Title and Author
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      author,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Rating Section (separated)
-                    Row(
+                    )
+                  else
+                    Stack(
                       children: [
-                        Text(
-                          rating,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.orange,
+                        Image.network(
+                          recipe.instructionVideoLink, // Fallback to static image
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(height: 200, color: Colors.grey[300]);
+                          },
+                        ),
+                        Positioned.fill(
+                          child: Center(
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.play_circle_filled,
+                                color: Colors.white,
+                                size: 50,
+                              ),
+                              onPressed: () {},
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          ratingNumber.toString(),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.orange,
+                        const Positioned(
+                          bottom: 10,
+                          right: 10,
+                          child: Text(
+                            '12:45',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    // Recipe Stats (time, nation, meal type)
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          const Icon(
-                            IconlyLight.timeCircle,
-                            size: 18,
-                            color: Colors.grey,
+                  // Recipe Title and Details
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            time,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          difficultyStars,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.orange,
                           ),
-                          const SizedBox(width: 16),
-                          const Icon(Icons.flag, size: 18, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'Italian',
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                          const SizedBox(width: 16),
-                          const Icon(
-                            Icons.restaurant,
-                            size: 18,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'Dinner',
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                          const SizedBox(width: 16),
-                          const Icon(Icons.speed, size: 18, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'Medium',
-                            style: TextStyle(fontSize: 13, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Ingredients Section
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Ingredients',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Row(
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
                             children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.remove_circle,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () {},
+                              const Icon(
+                                IconlyLight.timeCircle,
+                                size: 18,
+                                color: Colors.grey,
                               ),
-                              const Text(
-                                '4 servings',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.add_circle,
-                                  color: Colors.red,
+                              const SizedBox(width: 4),
+                              Text(
+                                time,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
                                 ),
-                                onPressed: () {},
+                              ),
+                              const SizedBox(width: 16),
+                              const Icon(Icons.flag, size: 18, color: Colors.grey),
+                              const SizedBox(width: 4),
+                              Text(
+                                nationWithFlag,
+                                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                              ),
+                              const SizedBox(width: 16),
+                              const Icon(
+                                Icons.restaurant,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                recipe.meals,
+                                style: const TextStyle(fontSize: 16, color: Colors.grey),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Column(
-                      children: [
-                        _buildIngredientItem('400g spaghetti'),
-                        _buildIngredientItem('200g guanciale or pancetta'),
-                        _buildIngredientItem('4 large eggs'),
-                        _buildIngredientItem('100g Pecorino Romano'),
-                        _buildIngredientItem('100g Parmigiano Reggiano'),
-                        _buildIngredientItem('Black pepper to taste'),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Cooking Steps Section
-                    const Text(
-                      'Cooking Steps',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: cookingSteps.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        ),
+                        const SizedBox(height: 24),
+                        // Ingredients Section
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                '${index + 1}.',
-                                style: const TextStyle(
-                                  fontSize: 16,
+                              const Text(
+                                'Ingredients',
+                                style: TextStyle(
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  cookingSteps[index],
-                                  style: const TextStyle(fontSize: 16),
-                                ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.remove_circle,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _updateServings(-1),
+                                  ),
+                                  Text(
+                                    '$_servings serving${_servings == 1 ? '' : 's'}',
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.add_circle,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _updateServings(1),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        );
-                      },
+                        ),
+                        const SizedBox(height: 8),
+                        Column(
+                          children: recipe.ingredients.map((ingredient) {
+                            return _buildIngredientItem(
+                              '${ingredient.amount} ${ingredient.defaultUnit} ${ingredient.ingredient}',
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 24),
+                        // Cooking Steps Section
+                        const Text(
+                          'Cooking Steps',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: recipe.steps.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${recipe.steps[index].stepNumber}.',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      recipe.steps[index].instruction,
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        // Suggested Recipes Section
+                        const Text(
+                          'More Recipes You’ll Love',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildSuggestedRecipeCard(
+                                title: 'Creamy Pasta Alfredo',
+                                time: '25 mins',
+                                imageUrl: 'https://via.placeholder.com/150',
+                              ),
+                              const SizedBox(width: 16),
+                              _buildSuggestedRecipeCard(
+                                title: 'Penne Arrabbiata',
+                                time: '20 mins',
+                                imageUrl: 'https://via.placeholder.com/150',
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    // Suggested Recipes Section
-                    const Text(
-                      'More Recipes You’ll Love',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: suggestedRecipes.map((recipe) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 16.0),
-                            child: _buildSuggestedRecipeCard(
-                              title: recipe['title']!,
-                              time: recipe['time']!,
-                              imageUrl: recipe['imageUrl']!,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
       bottomNavigationBar: _isNavBarVisible
           ? SizedBox(
-              height: 60.0,
-              child: BottomNavigationBar(
-                items: const [
-                  BottomNavigationBarItem(
-                    icon: Icon(IconlyLight.home),
-                    label: 'Home',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(IconlyLight.search),
-                    label: 'Search',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(IconlyLight.bookmark),
-                    label: 'Saved',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(IconlyLight.buy),
-                    label: 'Shopping',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(IconlyLight.user2),
-                    label: 'Profile',
-                  ),
-                ],
-                selectedItemColor: Colors.orange,
-                unselectedItemColor: Colors.grey,
-                currentIndex: 0,
-                onTap: (index) {
-                  if (index == 0) {
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-            )
+        height: 60.0,
+        child: BottomNavigationBar(
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(IconlyLight.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(IconlyLight.search),
+              label: 'Search',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(IconlyLight.bookmark),
+              label: 'Saved',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(IconlyLight.buy),
+              label: 'Shopping',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(IconlyLight.user2),
+              label: 'Profile',
+            ),
+          ],
+          selectedItemColor: Colors.orange,
+          unselectedItemColor: Colors.grey,
+          currentIndex: 0,
+          onTap: (index) {
+            if (index == 0) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+      )
           : null,
     );
   }

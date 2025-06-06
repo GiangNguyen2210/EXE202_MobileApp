@@ -51,4 +51,104 @@ class ProfileApi {
       throw Exception('Failed to upload profile image: ${response.statusCode} - $responseBody');
     }
   }
+
+  Future<UserProfileResponse> updateUserProfile(UserProfileResponse profile) async {
+    final String? token = await storage.read(key: 'jwt_token');
+    final response = await http.put(
+      Uri.parse('$baseUrl/UserProfile/${1}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(profile.toJson()), // Use toJson method
+    );
+    if (response.statusCode == 200) {
+      return UserProfileResponse.fromJson(jsonDecode(response.body)); // Return the updated profile
+    } else {
+      throw Exception('Failed to update user profile: ${response.statusCode}-${response.body}');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchIngredientTypes() async {
+    final String? token = await storage.read(key: 'jwt_token');
+    final response = await http.get(
+      Uri.parse('$baseUrl/Ingredients/ingredient-types'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<dynamic> items = data['items'];
+      return items.map((item) => {
+        'ingredientTypeId': item['ingredientTypeId'] as int,
+        'typeName': item['typeName'] as String,
+      }).toList();
+    } else {
+      throw Exception('Failed to load ingredient types: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<List<String>> fetchIngredientsByType(int ingredientTypeId) async {
+    final String? token = await storage.read(key: 'jwt_token');
+    final response = await http.get(
+      Uri.parse('$baseUrl/Ingredients/ingredients?typeId=$ingredientTypeId'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<dynamic> items = data['items'];
+      return items.map((item) => item['ingredientName'] as String).toList();
+    } else {
+      throw Exception('Failed to load ingredients: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<List<String>> fetchHealthConditionTypes() async {
+    final String? token = await storage.read(key: 'jwt_token');
+    final response = await http.get(
+      Uri.parse('$baseUrl/HealthCondition/health-condition-types'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<dynamic> items = data['items'];
+      return items.map((item) => item as String).toList();
+    } else {
+      throw Exception('Failed to load health condition types: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchHealthConditionsByType(String healthConditionType) async {
+    final String? token = await storage.read(key: 'jwt_token');
+    final response = await http.get(
+      Uri.parse('$baseUrl/HealthCondition/health-conditions?type=$healthConditionType'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<dynamic> items = data['items'];
+      return items.map((item) => {
+        'healthConditionId': item['healthConditionId'] as int,
+        'healthConditionName': item['healthConditionName'] as String,
+        'briefDescription': item['briefDescription'] as String,
+      }).toList();
+    } else {
+      throw Exception('Failed to load health conditions: ${response.statusCode} - ${response.body}');
+    }
+  }
 }

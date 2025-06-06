@@ -28,7 +28,7 @@ import 'screens/home_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/recipe_detail_screen.dart';
 import 'screens/notifications_screen.dart';
-
+import 'screens/streak_screen.dart'; // Thêm import
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
   runApp(const MyApp());
@@ -44,7 +44,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _sub;
-
   // Thêm GlobalKey để quản lý Navigator
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
@@ -86,6 +85,17 @@ class _MyAppState extends State<MyApp> {
     } catch (e) {
       print('Lỗi initial deep link: $e');
     }
+  }
+
+  void _navigateToResultScreen(String orderCode) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Sử dụng navigatorKey thay vì context
+      _navigatorKey.currentState!.push(
+        MaterialPageRoute(
+          builder: (context) => ResultScreen(orderCode: orderCode),
+        ),
+      );
+    });
   }
 
   @override
