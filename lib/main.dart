@@ -1,4 +1,19 @@
 import 'package:exe202_mobile_app/screens/recipe_detail_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/a_bit_about_yours_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/age_picker_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/allergies_selection_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/breakfast_time_selection_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/defines_your_goals.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/dinner_selection_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/gender_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/goal_weight_selection_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/goals_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/health_conditions_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/height_selection_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/login_or_sign_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/lunch_selection_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/weight_selection_screen.dart';
+import 'package:exe202_mobile_app/service/navigate_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -29,6 +44,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _sub;
+
   // Thêm GlobalKey để quản lý Navigator
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
@@ -42,40 +58,34 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _initDeepLink() async {
     // Xử lý deep link khi app đang chạy
-    _sub = _appLinks.uriLinkStream.listen((Uri? uri) {
-      if (uri != null && uri.scheme == 'myapp' && uri.host == 'payment') {
-        final orderCode = uri.queryParameters['orderCode'];
-        if (orderCode != null) {
-          _navigateToResultScreen(orderCode);
+    _sub = _appLinks.uriLinkStream.listen(
+      (Uri? uri) {
+        if (uri != null && uri.scheme == 'myapp' && uri.host == 'payment') {
+          final orderCode = uri.queryParameters['orderCode'];
+          if (orderCode != null) {
+            NavigationService.navigateToResultScreen(orderCode);
+          }
         }
-      }
-    }, onError: (err) {
-      print('Lỗi deep link: $err');
-    });
+      },
+      onError: (err) {
+        print('Lỗi deep link: $err');
+      },
+    );
 
     // Xử lý deep link khi app khởi động
     try {
       final initialUri = await _appLinks.getInitialLink();
-      if (initialUri != null && initialUri.scheme == 'myapp' && initialUri.host == 'payment') {
+      if (initialUri != null &&
+          initialUri.scheme == 'myapp' &&
+          initialUri.host == 'payment') {
         final orderCode = initialUri.queryParameters['orderCode'];
         if (orderCode != null) {
-          _navigateToResultScreen(orderCode);
+          NavigationService.navigateToResultScreen(orderCode);
         }
       }
     } catch (e) {
       print('Lỗi initial deep link: $e');
     }
-  }
-
-  void _navigateToResultScreen(String orderCode) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Sử dụng navigatorKey thay vì context
-      _navigatorKey.currentState!.push(
-        MaterialPageRoute(
-          builder: (context) => ResultScreen(orderCode: orderCode),
-        ),
-      );
-    });
   }
 
   @override
@@ -88,10 +98,26 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      navigatorKey: _navigatorKey,
-      // Sử dụng ProfileScreen làm mặc định (file cũ)
-      // Để dùng SubscriptionScreen (file mới), đổi thành: home: const SubscriptionScreen()
-      home: const ProfileScreen(),
+      navigatorKey: NavigationService.navigatorKey,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const LoginOrSignScreen(),
+        '/knowyourgoals': (context) => const DefinesYourGoalsScreen(),
+        '/login': (context) => const LoginScreen(),
+        'selectgoals': (context) => const GoalsScreen(),
+        'abitaboutyour': (context) => const ABitAboutYoursScreen(),
+        'genderselection': (context) => const GenderScreen(),
+        'ageselection': (context) => const AgePickerScreen(),
+        'heightselection': (context) => const HeightSelectionScreen(),
+        'weightselection': (context) => const WeightSelectionScreen(),
+        'goalweightselection': (context) => const GoalWeightSelectionScreen(),
+        'breakfasttimeselection': (context) => const BreakfastTimeScreen(),
+        'lunchtimeselection': (context) => const LunchTimeScreen(),
+        'dinnertimeselection': (context) => const DinnerTimeScreen(),
+        'allergiesselection': (context) => const AllergySelectionScreen(),
+        'healthconditionselection': (context) => const HealthConditionScreen(),
+        // or define a dynamic one using onGenerateRoute
+      },
     );
   }
 }

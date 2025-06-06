@@ -39,7 +39,7 @@ class LoginScreenService {
         if (jsonResponse != null && rememberMe) {
           await storage.write(key: 'jwt_token', value: jsonResponse.Token);
           return jsonResponse;
-        } else {
+        } else if (jsonResponse != null) {
           return jsonResponse;
         }
       } else {
