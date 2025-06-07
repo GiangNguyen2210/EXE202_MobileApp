@@ -44,3 +44,4 @@ class AppBottomNavigation extends StatelessWidget {
     return navBar;
   }
 }
+
