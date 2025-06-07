@@ -13,7 +13,7 @@ class _StreakScreenState extends State<StreakScreen> {
   final ProfileApi _profileApi = ProfileApi();
   UserProfileResponse? _userProfile;
   bool _isLoading = true;
-  bool _isRewardClaimed = false; // Trạng thái đã claim phần thưởng chưa
+  bool _isRewardClaimed = false;
 
   @override
   void initState() {
@@ -23,7 +23,7 @@ class _StreakScreenState extends State<StreakScreen> {
 
   Future<void> _fetchUserProfile() async {
     try {
-      const upId = 1; // Hardcode upId (thay bằng upId bạn lấy từ Swagger)
+      const upId = 2;
       final profile = await _profileApi.fetchUserProfile(upId);
       setState(() {
         _userProfile = profile;
@@ -56,9 +56,7 @@ class _StreakScreenState extends State<StreakScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _userProfile != null
-          ? SingleChildScrollView(
-        child: _buildStreakContent(),
-      )
+          ? _buildStreakContent()
           : const Center(
         child: Text(
           "Failed to load streak",
@@ -69,7 +67,8 @@ class _StreakScreenState extends State<StreakScreen> {
   }
 
   Widget _buildStreakContent() {
-    final currentDay = _userProfile!.streak!.clamp(1, 7); // Ngày hiện tại (1-7)
+    final streak = _userProfile!.streak ?? 1; // Default to 1 if null
+    final currentDay = (streak == 0 ? 1 : streak).clamp(1, 7); // Force 0 to 1
     final rewards = ['5% OFF', '10% OFF', '15% OFF', '20% OFF', '25% OFF', '30% OFF', '50% OFF'];
 
     return Padding(
@@ -81,7 +80,6 @@ class _StreakScreenState extends State<StreakScreen> {
             style: TextStyle(fontSize: 16, color: Colors.black54),
           ),
           const SizedBox(height: 20),
-          // Hàng 7 ngày
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: List.generate(7, (index) {
@@ -138,7 +136,6 @@ class _StreakScreenState extends State<StreakScreen> {
             style: const TextStyle(fontSize: 14, color: Colors.black54),
           ),
           const SizedBox(height: 30),
-          // Phần Today's Reward
           const Icon(
             Icons.card_giftcard,
             size: 50,
@@ -154,7 +151,6 @@ class _StreakScreenState extends State<StreakScreen> {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
-          // Phần Complete 7 Days For
           Container(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
             decoration: BoxDecoration(
@@ -178,7 +174,6 @@ class _StreakScreenState extends State<StreakScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          // Nút Claim Reward
           _isRewardClaimed
               ? const Icon(
             Icons.check_circle,
@@ -214,7 +209,7 @@ class _StreakScreenState extends State<StreakScreen> {
           ),
           const SizedBox(height: 5),
           Text(
-            "Current Streak: ${_userProfile!.streak} days",
+            "Current Streak: $currentDay days",
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 5),
