@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/notification_item_widget.dart';
-import '../widgets/app_bottom_navigation.dart';
 
 // Notification model to represent data from your database
 class NotificationModel {
@@ -128,20 +127,6 @@ class NotificationsScreen extends StatelessWidget {
             }
           },
         ),
-      ),
-      bottomNavigationBar: AppBottomNavigation(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(IconlyLight.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(IconlyLight.discovery), label: 'Explore'),
-          BottomNavigationBarItem(icon: Icon(IconlyLight.bookmark), label: 'Save'),
-          BottomNavigationBarItem(icon: Icon(IconlyLight.buy), label: 'Shopping'),
-          BottomNavigationBarItem(icon: Icon(IconlyLight.user2), label: 'Profile'),
-        ],
-        currentIndex: 0,
-        onTap: (index) {},
-        backgroundColor: Colors.white,
-        selectedItemColor: Colors.orange,
-        unselectedItemColor: Colors.grey,
       ),
     );
   }

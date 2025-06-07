@@ -14,8 +14,6 @@ class _StreakScreenState extends State<StreakScreen> {
   UserProfileResponse? _userProfile;
   bool _isLoading = true;
   bool _isRewardClaimed = false; // Trạng thái đã claim phần thưởng chưa
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
@@ -25,7 +23,7 @@ class _StreakScreenState extends State<StreakScreen> {
 
   Future<void> _fetchUserProfile() async {
     try {
-      const upId = 2; // Hardcode upId (thay bằng upId bạn lấy từ Swagger)
+      const upId = 1; // Hardcode upId (thay bằng upId bạn lấy từ Swagger)
       final profile = await _profileApi.fetchUserProfile(upId);
       setState(() {
         _userProfile = profile;
@@ -58,7 +56,9 @@ class _StreakScreenState extends State<StreakScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _userProfile != null
-          ? _buildStreakContent()
+          ? SingleChildScrollView(
+        child: _buildStreakContent(),
+      )
           : const Center(
         child: Text(
           "Failed to load streak",

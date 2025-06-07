@@ -17,7 +17,7 @@ class SubscriptionScreen extends StatefulWidget {
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   final PayOSService _payOSService = PayOSService();
   final ProfileApi _profileApi = ProfileApi();
-  static const int _hardcodedUpId = 5;
+  static const int _hardcodedUpId = 1;
   late Future<UserProfileResponse> _userProfileFuture;
   bool _isPaymentLoading = false;
 
@@ -361,21 +361,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             debugPrint('No data available in FutureBuilder');
             return const Center(child: Text('Không có dữ liệu'));
           }
-        },
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt), label: 'Orders'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
-        ],
-        selectedItemColor: Colors.orange,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        onTap: (index) {
-          // TODO: Handle navigation
         },
       ),
     );

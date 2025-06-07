@@ -19,8 +19,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
   late TextEditingController _fullNameController;
   late TextEditingController _usernameController;
-  int? _selectedAge; // Moved initialization to initState
-  String? _selectedGender; // Moved initialization to initState
+  int? _selectedAge;
+  String? _selectedGender;
   late TextEditingController _emailController;
   List<TextEditingController> _allergyControllers = [];
   List<TextEditingController> _conditionControllers = [];
@@ -32,8 +32,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     print('Fetching user profile...');
     _userProfileFuture = ProfileApi().fetchUserProfile(1).then((profile) {
-      _selectedAge = profile.age; // Initialize once with fetched data
-      _selectedGender = profile.gender; // Initialize once with fetched data
+      _selectedAge = profile.age;
+      _selectedGender = profile.gender;
       _selectedAllergies = List.from(profile.allergies ?? []);
       _selectedHealthConditions = profile.healthConditions.isNotEmpty
           ? profile.healthConditions.map((hc) => {'condition': hc.condition, 'status': hc.status}).toList()
@@ -62,8 +62,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _isEditing = !_isEditing;
       if (!_isEditing) {
         _userProfileFuture = ProfileApi().fetchUserProfile(1).then((profile) {
-          _selectedAge = profile.age; // Reset to fetched data when discarding
-          _selectedGender = profile.gender; // Reset to fetched data when discarding
+          _selectedAge = profile.age;
+          _selectedGender = profile.gender;
           _selectedAllergies = List.from(profile.allergies ?? []);
           _selectedHealthConditions = profile.healthConditions.isNotEmpty
               ? profile.healthConditions.map((hc) => {'condition': hc.condition, 'status': hc.status}).toList()
@@ -97,7 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fullName: _fullNameController.text,
         username: _usernameController.text.isEmpty ? null : _usernameController.text,
         age: _selectedAge ?? userProfile.age,
-        gender: _selectedGender ?? userProfile.gender ?? '', // Ensure gender is never null
+        gender: _selectedGender ?? userProfile.gender ?? '',
         allergies: _selectedAllergies,
         healthConditions: _selectedHealthConditions.map((hc) => HealthCondition(condition: hc['condition'] ?? '', status: hc['status'])).toList(),
         userId: userProfile.userId,

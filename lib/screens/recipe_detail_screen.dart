@@ -72,7 +72,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
     final int recipeId = args?['recipeId'] ?? 33;
 
     return Scaffold(
@@ -112,29 +113,34 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           final recipe = snapshot.data!;
           final String title = recipe.recipeName;
           final String time = "${recipe.timeEstimation} mins";
-          final String difficultyStars = _getDifficultyStars(recipe.difficultyEstimation.clamp(1, 5));
+          final String difficultyStars = _getDifficultyStars(
+            recipe.difficultyEstimation.clamp(1, 5),
+          );
           final String nationWithFlag = _getNationWithFlag(recipe.nation);
 
           // Initialize YouTube player controller if not failed
           if (_youtubeController == null && !_videoLoadFailed) {
-            final videoId = YoutubePlayer.convertUrlToId(recipe.instructionVideoLink);
+            final videoId = YoutubePlayer.convertUrlToId(
+              recipe.instructionVideoLink,
+            );
             if (videoId != null) {
-              _youtubeController = YoutubePlayerController(
-                initialVideoId: videoId,
-                flags: const YoutubePlayerFlags(
-                  autoPlay: false,
-                  mute: false,
-                ),
-              )..addListener(() {
-                // Listen for errors in video loading
-                if (_youtubeController!.value.hasError) {
-                  setState(() {
-                    _videoLoadFailed = true;
-                    _youtubeController?.dispose();
-                    _youtubeController = null;
+              _youtubeController =
+                  YoutubePlayerController(
+                    initialVideoId: videoId,
+                    flags: const YoutubePlayerFlags(
+                      autoPlay: false,
+                      mute: false,
+                    ),
+                  )..addListener(() {
+                    // Listen for errors in video loading
+                    if (_youtubeController!.value.hasError) {
+                      setState(() {
+                        _videoLoadFailed = true;
+                        _youtubeController?.dispose();
+                        _youtubeController = null;
+                      });
+                    }
                   });
-                }
-              });
             } else {
               setState(() {
                 _videoLoadFailed = true;
@@ -183,12 +189,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     Stack(
                       children: [
                         Image.network(
-                          recipe.instructionVideoLink, // Fallback to static image
+                          recipe.instructionVideoLink,
+                          // Fallback to static image
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return Container(height: 200, color: Colors.grey[300]);
+                            return Container(
+                              height: 200,
+                              color: Colors.grey[300],
+                            );
                           },
                         ),
                         Positioned.fill(
@@ -253,11 +263,18 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              const Icon(Icons.flag, size: 18, color: Colors.grey),
+                              const Icon(
+                                Icons.flag,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 nationWithFlag,
-                                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
                               ),
                               const SizedBox(width: 16),
                               const Icon(
@@ -268,7 +285,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                               const SizedBox(width: 4),
                               Text(
                                 recipe.meals,
-                                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ],
                           ),
@@ -336,7 +356,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           itemCount: recipe.steps.length,
                           itemBuilder: (context, index) {
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4.0,
+                              ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -399,40 +421,41 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
       bottomNavigationBar: _isNavBarVisible
           ? SizedBox(
-        height: 60.0,
-        child: BottomNavigationBar(
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(IconlyLight.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(IconlyLight.search),
-              label: 'Search',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(IconlyLight.bookmark),
-              label: 'Saved',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(IconlyLight.buy),
-              label: 'Shopping',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(IconlyLight.user2),
-              label: 'Profile',
-            ),
-          ],
-          selectedItemColor: Colors.orange,
-          unselectedItemColor: Colors.grey,
-          currentIndex: 0,
-          onTap: (index) {
-            if (index == 0) {
-              Navigator.pop(context);
-            }
-          },
-        ),
-      )
+              height:
+                  82.0, // This height might not account for safe area padding
+              child: BottomNavigationBar(
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(IconlyLight.home),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(IconlyLight.search),
+                    label: 'Search',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(IconlyLight.bookmark),
+                    label: 'Saved',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(IconlyLight.buy),
+                    label: 'Shopping',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(IconlyLight.user2),
+                    label: 'Profile',
+                  ),
+                ],
+                selectedItemColor: Colors.orange,
+                unselectedItemColor: Colors.grey,
+                currentIndex: 0,
+                onTap: (index) {
+                  if (index == 0) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            )
           : null,
     );
   }
