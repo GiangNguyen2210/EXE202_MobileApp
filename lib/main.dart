@@ -29,6 +29,7 @@ import 'screens/result_screen.dart';
 import 'screens/recipe_detail_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/streak_screen.dart'; // Thêm import
+
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
   runApp(const MyApp());
@@ -44,6 +45,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _sub;
+
   // Thêm GlobalKey để quản lý Navigator
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 

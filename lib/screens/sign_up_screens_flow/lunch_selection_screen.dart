@@ -12,7 +12,7 @@ class LunchTimeScreen extends StatefulWidget {
 
 class _LunchTimeScreenState extends State<LunchTimeScreen> {
   final FixedExtentScrollController hourController =
-      FixedExtentScrollController(initialItem: 0); // 01
+      FixedExtentScrollController(initialItem: 11); // 01
   final FixedExtentScrollController minuteController =
       FixedExtentScrollController(initialItem: 0); // :00
   final FixedExtentScrollController periodController =
@@ -20,7 +20,7 @@ class _LunchTimeScreenState extends State<LunchTimeScreen> {
 
   late SignUpRequestDTO signUpRequestDTO;
 
-  int selectedHour = 1;
+  int selectedHour = 12;
   int selectedMinute = 0;
   String period = 'AM';
 

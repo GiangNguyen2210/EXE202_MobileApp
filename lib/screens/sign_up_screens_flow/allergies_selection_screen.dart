@@ -23,6 +23,9 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
 
   late List<AllergenItem> allergens = [];
 
+  final TextEditingController _textController = TextEditingController();
+  final LayerLink _layerLink = LayerLink();
+
   Future<void> loadIngredient() async {
     final jsonResponse = await allergiesScreenService.fetchCommonIngredient();
     final parsedIngredients = allergensService.parseIngredientToAllergenList(
