@@ -241,7 +241,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(IconlyLight.arrowLeft2, color: Colors.black),
-            onPressed: null,
+            onPressed: () {
+              // Pop the current route to return to HomeScreen
+              widget.navigatorKey.currentState!.pop();
+            },
           ),
           flexibleSpace: Container(
             decoration: const BoxDecoration(

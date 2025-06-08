@@ -66,7 +66,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     super.initState();
     // Initialize screens list with required arguments
     _screens = [
-      const HomeScreen(),              // Index 0
+      HomeScreen(navigatorKey: _navigatorKey),              // Index 0
       const SubscriptionScreen(),      // Index 1
       NotificationsScreen(notifications: _notifications), // Index 2
       const StreakScreen(),            // Index 3 (was Achievement, now Streak)

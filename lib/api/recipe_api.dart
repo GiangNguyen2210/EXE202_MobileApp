@@ -13,9 +13,10 @@ class RecipeApi {
     required int page,
     required int pageSize,
     String? mealName,
+    String? searchTerm, // New: Add searchTerm parameter
   }) async {
     final uri = Uri.parse(
-      '$baseUrl/Recipes/home?page=$page&pageSize=$pageSize${mealName != null ? '&category=$mealName' : ''}',
+      '$baseUrl/Recipes/home?page=$page&pageSize=$pageSize${mealName != null ? '&category=$mealName' : ''}${searchTerm != null ? '&searchTerm=$searchTerm' : ''}',
     );
     try {
       final response = await http

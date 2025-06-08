@@ -8,7 +8,8 @@ import '../api/recipe_api.dart';
 import '../models/DTOs/recipe_response.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final GlobalKey<NavigatorState> navigatorKey;
+  const HomeScreen({super.key, required this.navigatorKey});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -24,6 +25,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _selectedCategory;
   late int _totalPages = 1;
   List<RecipeItem> _allRecipes = [];
+  final TextEditingController _searchController = TextEditingController(); // New: Controller for search input
+  String _searchQuery = ''; // New: Store the current search query
 
   @override
   void initState() {
@@ -47,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     for (var controller in _scrollControllers) {
       controller.dispose();
     }
+    _searchController.dispose(); // New: Dispose of the search controller
     super.dispose();
   }
 
@@ -66,7 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final response = await api.fetchRecipes(
           page: 1,
           pageSize: _recipesPerPage,
-          mealName: _selectedCategory?.toLowerCase()
+          mealName: _selectedCategory?.toLowerCase(),
+          searchTerm: _searchQuery.isNotEmpty ? _searchQuery : null // New: Pass searchTerm
       );
 
       // Always update total pages first
@@ -96,7 +101,8 @@ class _HomeScreenState extends State<HomeScreen> {
         futures.add(api.fetchRecipes(
             page: page,
             pageSize: _recipesPerPage,
-            mealName: _selectedCategory?.toLowerCase()
+            mealName: _selectedCategory?.toLowerCase(),
+            searchTerm: _searchQuery.isNotEmpty ? _searchQuery : null // New: Pass searchTerm
         ));
       }
 
@@ -127,6 +133,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _currentPage = 0;
       _allRecipes = []; // Clear existing recipes immediately
       _totalPages = 1; // Reset to prevent UI issues
+      _searchQuery = ''; // New: Clear search query when category changes
+      _searchController.clear(); // New: Clear search input
     });
 
     // Reset page controller first
@@ -135,6 +143,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Then fetch new data
+    setState(() {
+      _fetchRecipesFuture = _preloadRecipes(1);
+    });
+  }
+
+  // New: Handle search submission
+  void _onSearchSubmitted(String query) {
+    setState(() {
+      _searchQuery = query.trim();
+      _currentPage = 0;
+      _allRecipes = [];
+      _totalPages = 1;
+      _isSearchBoxVisible = false; // Hide search bar after submission
+    });
+
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
+
     setState(() {
       _fetchRecipesFuture = _preloadRecipes(1);
     });
@@ -205,6 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           margin: const EdgeInsets.only(right: 8.0),
                           child: TextField(
+                            controller: _searchController, // New: Use controller
                             decoration: InputDecoration(
                               hintText: 'Find recipe...',
                               border: OutlineInputBorder(
@@ -213,11 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
                             ),
-                            onSubmitted: (value) {
-                              setState(() {
-                                _isSearchBoxVisible = false;
-                              });
-                            },
+                            onSubmitted: _onSearchSubmitted, // New: Handle submission
                           ),
                         ),
                       ),
@@ -229,18 +253,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: () {
                         setState(() {
                           _isSearchBoxVisible = !_isSearchBoxVisible;
+                          if (!_isSearchBoxVisible) {
+                            _searchController.clear();
+                            _searchQuery = '';
+                            _fetchRecipesFuture = _preloadRecipes(1); // Reset recipes
+                          }
                         });
                       },
                     ),
                     IconButton(
                       icon: const Icon(IconlyLight.profile, color: Colors.grey),
                       onPressed: () {
-                        // Navigate to Profile screen with navigatorKey from context
-                        Navigator.push(
-                          context,
+                        // Navigate to ProfileScreen using the root navigator
+                        Navigator.of(context, rootNavigator: true).push(
                           MaterialPageRoute(
                             builder: (context) => ProfileScreen(
-                              navigatorKey: Navigator.of(context).overlay!.navigatorKey!,
+                              navigatorKey: widget.navigatorKey,
                             ),
                           ),
                         );
@@ -472,6 +500,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-extension on OverlayState {
-  get navigatorKey => ProfileScreen(navigatorKey: GlobalKey());
-}
+// extension on OverlayState {
+//   get navigatorKey => ProfileScreen(navigatorKey: GlobalKey());
+// }
