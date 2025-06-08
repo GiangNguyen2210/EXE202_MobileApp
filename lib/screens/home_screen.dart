@@ -1,4 +1,5 @@
 import 'package:exe202_mobile_app/screens/profile_screen.dart';
+import 'package:exe202_mobile_app/screens/recipe_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -392,8 +393,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     final recipes = _allRecipes;
 
-                    // This check is no longer needed since we always have at least 1 page
-
                     return PageView.builder(
                       controller: _pageController,
                       itemCount: _totalPages,
@@ -439,7 +438,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                       time: '${recipe.timeEstimation} mins',
                                       difficultyEstimation: recipe.difficultyEstimation,
                                       mealName: recipe.mealName,
-                                      imageUrl: recipe.imageUrl,
+                                      imageUrl: recipe.imageUrl ?? '',
+                                      onTap: () {
+                                        // Navigate to RecipeDetailScreen with the recipe ID
+                                        widget.navigatorKey.currentState!.push(
+                                          MaterialPageRoute(
+                                            builder: (context) => RecipeDetailScreen(),
+                                            settings: RouteSettings(arguments: {'recipeId': recipe.recipeId}), // Pass recipe ID
+                                          ),
+                                        );
+                                      },
                                     );
                                   },
                                 ),
@@ -499,7 +507,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-// extension on OverlayState {
-//   get navigatorKey => ProfileScreen(navigatorKey: GlobalKey());
-// }

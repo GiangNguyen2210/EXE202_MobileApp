@@ -18,14 +18,40 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late Future<RecipeDetail> _fetchRecipeFuture;
   int _servings = 1;
   YoutubePlayerController? _youtubeController;
-  bool _videoLoadFailed = false; // Track if video fails to load
+  bool _videoLoadFailed = false;
+  int? _recipeId; // Store recipeId as a state variable
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    final api = RecipeDetailApi();
-    _fetchRecipeFuture = api.fetchRecipeDetail(33);
+    // Initialize _fetchRecipeFuture with a default or placeholder value
+    _fetchRecipeFuture = Future.value(RecipeDetail(
+      recipeId: 0,
+      recipeName: 'Loading...',
+      meals: '',
+      difficultyEstimation: 0,
+      timeEstimation: 0,
+      nation: '',
+      cuisineId: 0,
+      instructionVideoLink: '',
+      ingredients: [],
+      steps: [],
+    ));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final int recipeId = args?['recipeId'] ?? 33;
+    if (_recipeId != recipeId) { // Only update if recipeId changes
+      setState(() {
+        _recipeId = recipeId;
+        final api = RecipeDetailApi();
+        _fetchRecipeFuture = api.fetchRecipeDetail(recipeId);
+      });
+    }
   }
 
   @override
@@ -72,10 +98,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final args =
-        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-    final int recipeId = args?['recipeId'] ?? 33;
-
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -118,29 +140,26 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           );
           final String nationWithFlag = _getNationWithFlag(recipe.nation);
 
-          // Initialize YouTube player controller if not failed
           if (_youtubeController == null && !_videoLoadFailed) {
             final videoId = YoutubePlayer.convertUrlToId(
               recipe.instructionVideoLink,
             );
             if (videoId != null) {
-              _youtubeController =
-                  YoutubePlayerController(
-                    initialVideoId: videoId,
-                    flags: const YoutubePlayerFlags(
-                      autoPlay: false,
-                      mute: false,
-                    ),
-                  )..addListener(() {
-                    // Listen for errors in video loading
-                    if (_youtubeController!.value.hasError) {
-                      setState(() {
-                        _videoLoadFailed = true;
-                        _youtubeController?.dispose();
-                        _youtubeController = null;
-                      });
-                    }
+              _youtubeController = YoutubePlayerController(
+                initialVideoId: videoId,
+                flags: const YoutubePlayerFlags(
+                  autoPlay: false,
+                  mute: false,
+                ),
+              )..addListener(() {
+                if (_youtubeController!.value.hasError) {
+                  setState(() {
+                    _videoLoadFailed = true;
+                    _youtubeController?.dispose();
+                    _youtubeController = null;
                   });
+                }
+              });
             } else {
               setState(() {
                 _videoLoadFailed = true;
@@ -158,10 +177,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Video or Fallback Image
                   if (_youtubeController != null && !_videoLoadFailed)
                     SizedBox(
-                      height: 200, // Fixed height to match previous image
+                      height: 200,
                       width: double.infinity,
                       child: YoutubePlayer(
                         controller: _youtubeController!,
@@ -177,9 +195,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           RemainingDuration(),
                           PlaybackSpeedButton(),
                         ],
-                        onReady: () {
-                          // Video player is ready
-                        },
+                        onReady: () {},
                         onEnded: (metaData) {
                           _youtubeController?.seekTo(Duration.zero);
                         },
@@ -190,7 +206,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       children: [
                         Image.network(
                           recipe.instructionVideoLink,
-                          // Fallback to static image
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
@@ -223,7 +238,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         ),
                       ],
                     ),
-                  // Recipe Title and Details
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -294,7 +308,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Ingredients Section
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10.0),
                           child: Row(
@@ -341,7 +354,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           }).toList(),
                         ),
                         const SizedBox(height: 24),
-                        // Cooking Steps Section
                         const Text(
                           'Cooking Steps',
                           style: TextStyle(
@@ -382,7 +394,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           },
                         ),
                         const SizedBox(height: 24),
-                        // Suggested Recipes Section
                         const Text(
                           'More Recipes You’ll Love',
                           style: TextStyle(
@@ -421,41 +432,40 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
       bottomNavigationBar: _isNavBarVisible
           ? SizedBox(
-              height:
-                  82.0, // This height might not account for safe area padding
-              child: BottomNavigationBar(
-                items: const [
-                  BottomNavigationBarItem(
-                    icon: Icon(IconlyLight.home),
-                    label: 'Home',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(IconlyLight.search),
-                    label: 'Search',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(IconlyLight.bookmark),
-                    label: 'Saved',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(IconlyLight.buy),
-                    label: 'Shopping',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(IconlyLight.user2),
-                    label: 'Profile',
-                  ),
-                ],
-                selectedItemColor: Colors.orange,
-                unselectedItemColor: Colors.grey,
-                currentIndex: 0,
-                onTap: (index) {
-                  if (index == 0) {
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-            )
+        height: 82.0,
+        child: BottomNavigationBar(
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(IconlyLight.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(IconlyLight.search),
+              label: 'Search',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(IconlyLight.bookmark),
+              label: 'Saved',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(IconlyLight.buy),
+              label: 'Shopping',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(IconlyLight.user2),
+              label: 'Profile',
+            ),
+          ],
+          selectedItemColor: Colors.orange,
+          unselectedItemColor: Colors.grey,
+          currentIndex: 0,
+          onTap: (index) {
+            if (index == 0) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+      )
           : null,
     );
   }

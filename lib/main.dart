@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'screens/home_screen.dart';
 import 'screens/subscription_screen.dart';
+
 // import 'screens/meal_planning_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/streak_screen.dart';
@@ -66,10 +67,10 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     super.initState();
     // Initialize screens list with required arguments
     _screens = [
-      HomeScreen(navigatorKey: _navigatorKey),              // Index 0
-      const SubscriptionScreen(),      // Index 1
+      HomeScreen(navigatorKey: _navigatorKey), // Index 0
+      const SubscriptionScreen(), // Index 1
       NotificationsScreen(notifications: _notifications), // Index 2
-      const StreakScreen(),            // Index 3 (was Achievement, now Streak)
+      const StreakScreen(), // Index 3 (was Achievement, now Streak)
       ProfileScreen(navigatorKey: _navigatorKey), // Index 4
     ];
 
@@ -78,15 +79,17 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _navBarAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0, 1),
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _navBarAnimation =
+        Tween<Offset>(begin: Offset.zero, end: const Offset(0, 1)).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOut,
+          ),
+        );
     _animationController.reverse();
-    print('Animation Controller initialized: ${_animationController.isCompleted}');
+    print(
+      'Animation Controller initialized: ${_animationController.isCompleted}',
+    );
 
     if (!kIsWeb) {
       _initDeepLink();
@@ -96,7 +99,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   Future<void> _initDeepLink() async {
     // Handle deep link when app is running
     _sub = _appLinks.uriLinkStream.listen(
-          (Uri? uri) {
+      (Uri? uri) {
         if (uri != null && uri.scheme == 'myapp' && uri.host == 'payment') {
           final orderCode = uri.queryParameters['orderCode'];
           if (orderCode != null) {
@@ -147,8 +150,13 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollUpdateNotification) {
-      print('Scroll Notification - Depth: ${notification.depth}, Delta: ${notification.scrollDelta}, Metrics: ${notification.metrics}');
-      if (notification.scrollDelta! > 0 && _isNavBarVisible) {
+      print(
+        'Scroll Notification - Depth: ${notification.depth}, Delta: ${notification.scrollDelta}, Metrics: ${notification.metrics}',
+      );
+      final scrollable =
+          notification.metrics.maxScrollExtent >
+          0; // Check if content is scrollable
+      if (notification.scrollDelta! > 0 && _isNavBarVisible && scrollable) {
         print('Hiding navbar');
         setState(() {
           _isNavBarVisible = false;
@@ -156,7 +164,9 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
         _animationController.forward().then((_) {
           print('Animation forward completed');
         });
-      } else if (notification.scrollDelta! < 0 && !_isNavBarVisible) {
+      } else if (notification.scrollDelta! < 0 &&
+          !_isNavBarVisible &&
+          scrollable) {
         print('Showing navbar');
         setState(() {
           _isNavBarVisible = true;
@@ -181,20 +191,39 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: _navigatorKey,
-      theme: ThemeData(
-        textTheme: GoogleFonts.poppinsTextTheme(),
-      ),
+      theme: ThemeData(textTheme: GoogleFonts.poppinsTextTheme()),
       home: Scaffold(
-        body: NotificationListener<ScrollNotification>(
-          onNotification: _handleScrollNotification,
-          child: _screens[_currentIndex],
+        body: GestureDetector(
+          onTap: () {
+            if (!_isNavBarVisible) {
+              setState(() {
+                _isNavBarVisible = true;
+              });
+              _animationController.reverse().then((_) {
+                print('Animation reverse completed on tap');
+              });
+            }
+          },
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _handleScrollNotification,
+            child: _screens[_currentIndex],
+          ),
         ),
         bottomNavigationBar: AppBottomNavigation(
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.subscriptions), label: 'Subscription'),
-            BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notification'),
-            BottomNavigationBarItem(icon: Icon(Icons.emoji_events), label: 'Streak'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.subscriptions),
+              label: 'Subscription',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.notifications),
+              label: 'Notification',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.emoji_events),
+              label: 'Streak',
+            ),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           ],
           currentIndex: _currentIndex,
@@ -233,44 +262,22 @@ class AppBottomNavigation extends StatelessWidget {
     this.unselectedItemColor,
   }) : super(key: key);
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   Widget navBar = BottomNavigationBar(
-  //     elevation: 0,
-  //     items: items,
-  //     currentIndex: currentIndex,
-  //     onTap: onTap,
-  //     backgroundColor: backgroundColor ?? Colors.white,
-  //     selectedItemColor: selectedItemColor ?? Colors.orange,
-  //     unselectedItemColor: unselectedItemColor ?? Colors.grey,
-  //   );
-  //
-  //   if (animation != null && isVisible) {
-  //     return SlideTransition(
-  //       position: animation!,
-  //       child: isVisible ? navBar : const SizedBox.shrink(),
-  //     );
-  //   }
-  //
-  //   return navBar;
-  // }
   @override
   Widget build(BuildContext context) {
     print('Building AppBottomNavigation, isVisible: $isVisible');
     return isVisible
         ? SlideTransition(
-      position: animation!,
-      child: BottomNavigationBar(
-        elevation: 0,
-        items: items,
-        currentIndex: currentIndex,
-        onTap: onTap,
-        backgroundColor: backgroundColor ?? Colors.white,
-        selectedItemColor: selectedItemColor ?? Colors.orange,
-        unselectedItemColor: unselectedItemColor ?? Colors.grey,
-      ),
-    )
+            position: animation!,
+            child: BottomNavigationBar(
+              elevation: 0,
+              items: items,
+              currentIndex: currentIndex,
+              onTap: onTap,
+              backgroundColor: backgroundColor ?? Colors.white,
+              selectedItemColor: selectedItemColor ?? Colors.orange,
+              unselectedItemColor: unselectedItemColor ?? Colors.grey,
+            ),
+          )
         : const SizedBox.shrink(); // Fully remove the navbar when hidden
   }
-
 }
