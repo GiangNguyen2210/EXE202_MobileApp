@@ -8,10 +8,8 @@ class RecipeDetailApi {
   final String baseUrl = dotenv.env['API_BASE_URL']!;
   final storage = const FlutterSecureStorage();
 
-  // RecipeDetailApi(this._apiPath);
-
   Future<RecipeDetail> fetchRecipeDetail(int recipeId) async {
-    final response = await http.get(Uri.parse('$baseUrl/Recipes/${53}'));
+    final response = await http.get(Uri.parse('$baseUrl/Recipes/$recipeId'));
 
     if (response.statusCode == 200) {
       return RecipeDetail.fromJson(jsonDecode(response.body));
