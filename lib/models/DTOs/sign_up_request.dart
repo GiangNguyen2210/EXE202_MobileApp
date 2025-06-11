@@ -1,4 +1,7 @@
 class SignUpRequestDTO {
+  late String? email;
+  late String? password;
+  String role = "User";
   late int? weight;
   late int? goalWeight;
   late double? height;
@@ -6,9 +9,13 @@ class SignUpRequestDTO {
   late int? age;
   late int? goalId;
   late final MealScheduledDTO mealScheduledDTO;
-  late List<int>? listAllergies;
+  List<int?> listAllergies = [];
+  List<int?> listHConditions = [];
+  late String? deviceId;
 
   SignUpRequestDTO({
+    this.email,
+    this.password,
     this.weight,
     this.goalWeight,
     this.height,
@@ -16,18 +23,21 @@ class SignUpRequestDTO {
     this.age,
     this.goalId,
     required this.mealScheduledDTO,
-    this.listAllergies,
+    this.deviceId,
   });
 
   factory SignUpRequestDTO.fromJson(Map<String, dynamic> json) {
     return SignUpRequestDTO(
+      email: json['email'],
+      password: json['password'],
       weight: json['weight'],
       goalWeight: json['goalWeight'],
       height: json['height'],
       gender: json['gender'],
-      age: json['age'],
       goalId: json['goalId'],
-      mealScheduledDTO: json['a'],
+      age: json['age'],
+      deviceId: json['deviceId'],
+      mealScheduledDTO: MealScheduledDTO.fromJson(json['mealScheduledDTO']),
     );
   }
 
@@ -47,6 +57,24 @@ class SignUpRequestDTO {
     }
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'email': email,
+      'password': password,
+      'role': role,
+      'weight': weight,
+      'goalWeight': goalWeight,
+      'height': height,
+      'gender': gender,
+      'age': age,
+      'goalId': goalId,
+      'mealScheduledDTO': mealScheduledDTO.toJson(),
+      'listAllergies': listAllergies,
+      'listHConditions': listHConditions,
+      'deviceId': deviceId,
+    };
+  }
+
   @override
   String toString() {
     return 'SignUpRequestDTO{'
@@ -58,6 +86,8 @@ class SignUpRequestDTO {
         'goalId: $goalId, '
         'mealScheduledDTO: ${mealScheduledDTO.toString()}, '
         'listAllergies: $listAllergies'
+        'ListHConditions: $listHConditions.'
+        'deviceId: $deviceId.'
         '}';
   }
 }
@@ -102,6 +132,22 @@ class MealScheduledDTO {
         'goalWeight: $LunchTime, '
         'height: $DinnerTime, '
         '}';
+  }
+
+  factory MealScheduledDTO.fromJson(Map<String, dynamic> json) {
+    return MealScheduledDTO(
+      BreakFastTime: json['breakFastTime'],
+      LunchTime: json['lunchTime'],
+      DinnerTime: json['dinnerTime'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'breakFastTime': BreakFastTime,
+      'lunchTime': LunchTime,
+      'dinnerTime': DinnerTime,
+    };
   }
 }
 

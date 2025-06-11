@@ -1,3 +1,6 @@
+import 'package:exe202_mobile_app/screens/home_screen.dart';
+import 'package:exe202_mobile_app/screens/notifications_screen.dart';
+import 'package:exe202_mobile_app/screens/profile_screen.dart';
 import 'package:exe202_mobile_app/screens/recipe_detail_screen.dart';
 import 'package:exe202_mobile_app/screens/sign_up_screens_flow/a_bit_about_yours_screen.dart';
 import 'package:exe202_mobile_app/screens/sign_up_screens_flow/age_picker_screen.dart';
@@ -12,53 +15,67 @@ import 'package:exe202_mobile_app/screens/sign_up_screens_flow/health_conditions
 import 'package:exe202_mobile_app/screens/sign_up_screens_flow/height_selection_screen.dart';
 import 'package:exe202_mobile_app/screens/sign_up_screens_flow/login_or_sign_screen.dart';
 import 'package:exe202_mobile_app/screens/sign_up_screens_flow/lunch_selection_screen.dart';
+import 'package:exe202_mobile_app/screens/sign_up_screens_flow/notification_acceptance_screen.dart';
 import 'package:exe202_mobile_app/screens/sign_up_screens_flow/weight_selection_screen.dart';
+import 'package:exe202_mobile_app/screens/streak_screen.dart';
+import 'package:exe202_mobile_app/screens/subscription_screen.dart';
 import 'package:exe202_mobile_app/service/navigate_service.dart';
+import 'package:exe202_mobile_app/widgets/app_bottom_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
-
 import 'screens/login_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/subscription_screen.dart';
-import 'screens/home_screen.dart';
 import 'screens/result_screen.dart';
-import 'screens/recipe_detail_screen.dart';
-import 'screens/notifications_screen.dart';
-import 'screens/streak_screen.dart'; // Thêm import
+import 'package:firebase_core/firebase_core.dart';
 
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  final storage = FlutterSecureStorage();
+  String? token = await storage.read(key: 'jwt_token');
+
+  runApp(MyApp(initialRoute: token != null ? 'homescreen' : '/'));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final String initialRoute;
+
+  const MyApp({super.key, required this.initialRoute});
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _sub;
-
-  // Thêm GlobalKey để quản lý Navigator
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize animation controller for navbar
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _animationController.reverse();
+
     if (!kIsWeb) {
       _initDeepLink();
     }
   }
 
   Future<void> _initDeepLink() async {
-    // Xử lý deep link khi app đang chạy
+    // Handle deep link when app is running
     _sub = _appLinks.uriLinkStream.listen(
       (Uri? uri) {
         if (uri != null && uri.scheme == 'myapp' && uri.host == 'payment') {
@@ -91,7 +108,6 @@ class _MyAppState extends State<MyApp> {
 
   void _navigateToResultScreen(String orderCode) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Sử dụng navigatorKey thay vì context
       _navigatorKey.currentState!.push(
         MaterialPageRoute(
           builder: (context) => ResultScreen(orderCode: orderCode),
@@ -128,57 +144,24 @@ class _MyAppState extends State<MyApp> {
         'dinnertimeselection': (context) => const DinnerTimeScreen(),
         'allergiesselection': (context) => const AllergySelectionScreen(),
         'healthconditionselection': (context) => const HealthConditionScreen(),
+        'homescreen': (context) =>
+            const MyBottomNavigator(currentIndex: 0, child: HomeScreen()),
+        'subscreen': (context) => const MyBottomNavigator(
+          currentIndex: 1,
+          child: SubscriptionScreen(),
+        ),
+        'notiscreen': (context) => const MyBottomNavigator(
+          currentIndex: 2,
+          child: NotificationsScreen(),
+        ),
+        'streakscreen': (context) =>
+            const MyBottomNavigator(currentIndex: 3, child: StreakScreen()),
+        'profilescreen': (context) =>
+            const MyBottomNavigator(currentIndex: 4, child: ProfileScreen()),
+        'notiacceptance': (context) => const NotificationAcceptanceScreen(),
         // or define a dynamic one using onGenerateRoute
       },
+      theme: ThemeData(textTheme: GoogleFonts.poppinsTextTheme()),
     );
   }
 }
-
-// Test Noti Screen using this
-// void main() {
-//   runApp(MyApp());
-// }
-//
-// class MyApp extends StatelessWidget {
-//   // Sample notifications list
-//   final List<NotificationModel> notifications = [
-//     NotificationModel(
-//       title: "Nguyệt Trường Lộc đã nhắn",
-//       body: "đen bụi ở mặt bình luận Việt Nam Th...",
-//       receivedAt: DateTime.now().subtract(Duration(minutes: 19)),
-//       isRead: true,
-//     ),
-//     NotificationModel(
-//       title: "POKEMON VN CLUB: ## [GIVEAWAY] QUỐC TẾ THIẾU N...",
-//       body: "",
-//       receivedAt: DateTime.now().subtract(Duration(hours: 3)),
-//       isRead: false,
-//     ),
-//     NotificationModel(
-//       title: "Nguyện Quỳnh Anh đã nhắn đen bạn",
-//       body: "bán vài nhân trong POKÉMON ở VN...",
-//       receivedAt: DateTime.now().subtract(Duration(hours: 3)),
-//       isRead: false,
-//     ),
-//     NotificationModel(
-//       title: "PokéCorner đã nhắn đen bạn ở một bình luận...",
-//       body: "Mua Bán, Trao Đổi Hội Đam Mê...",
-//       receivedAt: DateTime.now().subtract(Duration(hours: 21)),
-//       isRead: true,
-//     ),
-//     NotificationModel(
-//       title: "Sadness Ezreal đã phát trực tiếp: \"Lắm tì lúc b...",
-//       body: "",
-//       receivedAt: DateTime.now().subtract(Duration(hours: 22)),
-//       isRead: true,
-//     ),
-//   ];
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       debugShowCheckedModeBanner: false,
-//       home: NotificationsScreen(notifications: notifications),
-//     );
-//   }
-// }

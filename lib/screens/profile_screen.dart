@@ -1,3 +1,4 @@
+import 'package:exe202_mobile_app/service/navigate_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,9 +7,7 @@ import '../models/DTOs/user_profile_response.dart';
 import '../widgets/profile_screen_widgets/profile_screen_widgets.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final GlobalKey<NavigatorState> navigatorKey;
-
-  const ProfileScreen({super.key, required this.navigatorKey});
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -129,7 +128,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AllergiesDialog(
         initialAllergies: initialAllergies,
-        navigatorKey: widget.navigatorKey,
+        navigatorKey: NavigationService.navigatorKey,
       ),
     );
 
@@ -145,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => HealthConditionsDialog(
         initialHealthConditions: initialHealthConditions,
-        navigatorKey: widget.navigatorKey,
+        navigatorKey: NavigationService.navigatorKey,
       ),
     );
 

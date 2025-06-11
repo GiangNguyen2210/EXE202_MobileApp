@@ -14,9 +14,13 @@ class AllergiesScreenService {
     int page = 1,
     int pageSize = 20,
   }) async {
-    final url = Uri.parse(
+    Uri url = Uri.parse(
       '$baseUrl/Ingredients?searchTerm=$searchTerm&page=$page&pageSize=$pageSize',
     );
+
+    if (searchTerm == "") {
+      url = Uri.parse('$baseUrl/Ingredients?page=$page&pageSize=$pageSize');
+    }
 
     try {
       final response = await http.get(

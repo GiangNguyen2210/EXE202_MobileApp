@@ -1,4 +1,6 @@
 import 'package:exe202_mobile_app/screens/profile_screen.dart';
+
+import 'package:exe202_mobile_app/service/navigate_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -51,7 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _scrollToTop() {
-    if (_scrollControllers.isNotEmpty && _currentPage < _scrollControllers.length) {
+    if (_scrollControllers.isNotEmpty &&
+        _currentPage < _scrollControllers.length) {
       _scrollControllers[_currentPage].animateTo(
         0,
         duration: const Duration(milliseconds: 300),
@@ -64,9 +67,9 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final api = RecipeApi();
       final response = await api.fetchRecipes(
-          page: 1,
-          pageSize: _recipesPerPage,
-          mealName: _selectedCategory?.toLowerCase()
+        page: 1,
+        pageSize: _recipesPerPage,
+        mealName: _selectedCategory?.toLowerCase(),
       );
 
       // Always update total pages first
@@ -93,11 +96,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
       List<Future<RecipeResponse>> futures = [];
       for (int page = startPage; page <= endPage; page++) {
-        futures.add(api.fetchRecipes(
+        futures.add(
+          api.fetchRecipes(
             page: page,
             pageSize: _recipesPerPage,
-            mealName: _selectedCategory?.toLowerCase()
-        ));
+
+            mealName: _selectedCategory?.toLowerCase(),
+          ),
+        );
       }
 
       final responses = await Future.wait(futures);
@@ -196,7 +202,10 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -209,9 +218,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               hintText: 'Find recipe...',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8.0),
-                                borderSide: const BorderSide(color: Colors.grey),
+                                borderSide: const BorderSide(
+                                  color: Colors.grey,
+                                ),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14.0,
+                                vertical: 8.0,
+                              ),
                             ),
                             onSubmitted: (value) {
                               setState(() {
@@ -223,7 +237,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     IconButton(
                       icon: Icon(
-                        _isSearchBoxVisible ? IconlyLight.closeSquare : IconlyLight.search,
+                        _isSearchBoxVisible
+                            ? IconlyLight.closeSquare
+                            : IconlyLight.search,
                         color: Colors.grey,
                       ),
                       onPressed: () {
@@ -239,9 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ProfileScreen(
-                              navigatorKey: Navigator.of(context).overlay!.navigatorKey!,
-                            ),
+                            builder: (context) => ProfileScreen(),
                           ),
                         );
                       },
@@ -256,7 +270,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Wrap(
                     spacing: 6.0,
                     runSpacing: 8.0,
-                    alignment: WrapAlignment.start, // Ensure chips start from the left
+                    alignment: WrapAlignment.start,
+                    // Ensure chips start from the left
                     children: [
                       CategoryChip(
                         label: 'All Recipes',
@@ -371,7 +386,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemCount: _totalPages,
                       itemBuilder: (context, pageIndex) {
                         final startIndex = pageIndex * _recipesPerPage;
-                        final endIndex = (startIndex + _recipesPerPage) > recipes.length
+                        final endIndex =
+                            (startIndex + _recipesPerPage) > recipes.length
                             ? recipes.length
                             : (startIndex + _recipesPerPage);
 
@@ -382,7 +398,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         }
 
-                        final pageRecipes = recipes.sublist(startIndex, endIndex);
+                        final pageRecipes = recipes.sublist(
+                          startIndex,
+                          endIndex,
+                        );
 
                         if (_scrollControllers.length <= pageIndex) {
                           _scrollControllers.add(ScrollController());
@@ -391,25 +410,29 @@ class _HomeScreenState extends State<HomeScreen> {
                         return SingleChildScrollView(
                           controller: _scrollControllers[pageIndex],
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
                             child: Column(
                               children: [
                                 GridView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 16,
-                                    childAspectRatio: 0.65,
-                                  ),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 16,
+                                        mainAxisSpacing: 16,
+                                        childAspectRatio: 0.65,
+                                      ),
                                   itemCount: pageRecipes.length,
                                   itemBuilder: (context, index) {
                                     final recipe = pageRecipes[index];
                                     return RecipeCard(
                                       title: recipe.recipeName,
                                       time: '${recipe.timeEstimation} mins',
-                                      difficultyEstimation: recipe.difficultyEstimation,
+                                      difficultyEstimation:
+                                          recipe.difficultyEstimation,
                                       mealName: recipe.mealName,
                                       imageUrl: recipe.imageUrl,
                                     );
@@ -440,11 +463,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.arrow_left, color: Colors.grey),
                     onPressed: _currentPage > 0
                         ? () {
-                      _pageController.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    }
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
                         : null,
                   ),
                   Text(
@@ -455,11 +478,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.arrow_right, color: Colors.grey),
                     onPressed: _currentPage < _totalPages - 1
                         ? () {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    }
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
                         : null,
                   ),
                 ],
@@ -470,8 +493,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
-
-extension on OverlayState {
-  get navigatorKey => ProfileScreen(navigatorKey: GlobalKey());
 }

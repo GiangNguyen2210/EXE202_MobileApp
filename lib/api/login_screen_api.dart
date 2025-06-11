@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:exe202_mobile_app/models/DTOs/sign_up_request.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -38,6 +39,7 @@ class LoginScreenService {
 
         if (jsonResponse != null && rememberMe) {
           await storage.write(key: 'jwt_token', value: jsonResponse.Token);
+          await storage.write(key: 'UPId', value: jsonResponse.UPId.toString());
           return jsonResponse;
         } else if (jsonResponse != null) {
           return jsonResponse;
@@ -75,6 +77,7 @@ class LoginScreenService {
 
         if (jsonResponse != null) {
           await storage.write(key: 'jwt_token', value: jsonResponse.Token);
+          await storage.write(key: 'UPId', value: jsonResponse.UPId.toString());
           return jsonResponse;
         }
       } else {
@@ -82,6 +85,36 @@ class LoginScreenService {
         final errorResponse = ErrorMessageResponse.fromJson(data);
 
         return errorResponse;
+      }
+    } catch (e) {
+      throw Exception(")>!ERROR!<( : $e");
+    }
+  }
+
+  Future<dynamic> signUp(SignUpRequestDTO dto) async {
+    final url = Uri.parse('$baseUrl/Auth/signup');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(dto.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final jsonResponse = CustomerLoginResponse.safeFromJson(data);
+
+        if (jsonResponse != null) {
+          await storage.write(key: 'jwt_token', value: jsonResponse.Token);
+          await storage.write(key: 'UPId', value: jsonResponse.UPId.toString());
+          return jsonResponse;
+        } else {
+          final data = jsonDecode(response.body);
+          final errorResponse = ErrorMessageResponse.fromJson(data);
+
+          return errorResponse;
+        }
       }
     } catch (e) {
       throw Exception(")>!ERROR!<( : $e");

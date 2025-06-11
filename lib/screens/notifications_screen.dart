@@ -18,11 +18,43 @@ class NotificationModel {
   });
 }
 
-class NotificationsScreen extends StatelessWidget {
-  // Pass the list of notifications from the parent (e.g., fetched from database)
-  final List<NotificationModel> notifications;
+class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
 
-  const NotificationsScreen({Key? key, required this.notifications}) : super(key: key);
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  // Pass the list of notifications from the parent (e.g., fetched from database)
+  late final List<NotificationModel> notifications;
+
+  final List<NotificationModel> _notifications = [
+    NotificationModel(
+      title: 'New Recipe Available',
+      body: 'Check out our latest recipe: Spicy Chicken!',
+      receivedAt: DateTime.now().subtract(const Duration(hours: 2)),
+      isRead: false,
+    ),
+    NotificationModel(
+      title: 'Subscription Renewal',
+      body: 'Your Basic plan will renew in 3 days.',
+      receivedAt: DateTime.now().subtract(const Duration(days: 1)),
+      isRead: true,
+    ),
+    NotificationModel(
+      title: 'Update Available',
+      body: 'A new app update is ready to download.',
+      receivedAt: DateTime.now().subtract(const Duration(days: 3)),
+      isRead: true,
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    notifications = _notifications;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,13 +149,12 @@ class NotificationsScreen extends StatelessWidget {
                   : index - 2;
               final notification = index < newNotifications.length + 1
                   ? newNotifications[notificationIndex]
-                  : oldNotifications[notificationIndex - newNotifications.length];
-              final isNew = !notification.isRead && index <= newNotifications.length;
+                  : oldNotifications[notificationIndex -
+                        newNotifications.length];
+              final isNew =
+                  !notification.isRead && index <= newNotifications.length;
 
-              return NotificationItem(
-                notification: notification,
-                isNew: isNew,
-              );
+              return NotificationItem(notification: notification, isNew: isNew);
             }
           },
         ),

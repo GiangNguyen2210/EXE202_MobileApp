@@ -22,7 +22,7 @@ class _LunchTimeScreenState extends State<LunchTimeScreen> {
 
   int selectedHour = 12;
   int selectedMinute = 0;
-  String period = 'AM';
+  String period = 'PM';
 
   @override
   void didChangeDependencies() {

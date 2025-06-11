@@ -1,4 +1,10 @@
+import 'package:exe202_mobile_app/models/DTOs/sign_up_request.dart';
+import 'package:exe202_mobile_app/service/navigate_service.dart';
 import 'package:flutter/material.dart';
+
+import '../../api/allergies_screen_api.dart';
+import '../../api/health_conditions_api.dart';
+import '../../service/health_conditions_service.dart';
 
 class HealthConditionScreen extends StatefulWidget {
   const HealthConditionScreen({super.key});
@@ -8,27 +14,41 @@ class HealthConditionScreen extends StatefulWidget {
 }
 
 class _HealthConditionScreenState extends State<HealthConditionScreen> {
-  final Map<String, bool> _conditions = {
-    'Diabetes': false,
-    'High Blood Pressure': false,
-    'Heart Disease': false,
-    'Asthma': false,
-    'Arthritis': false,
-    'Allergies': false,
-    'Depression/Anxiety': false,
-    'Sleep Disorders': false,
-  };
+  late HealthConditionsApi healthConditionsApi;
+  late HCService hcService;
+  List<HCItem> items = []; // initialize empty list
+  late SignUpRequestDTO signUpRequestDTO;
 
-  final Map<String, String> _subtitles = {
-    'Diabetes': 'Type 1 or Type 2 diabetes',
-    'High Blood Pressure': 'Hypertension',
-    'Heart Disease': 'Cardiovascular conditions',
-    'Asthma': 'Respiratory condition',
-    'Arthritis': 'Joint inflammation',
-    'Allergies': 'Food or environmental',
-    'Depression/Anxiety': 'Mental health conditions',
-    'Sleep Disorders': 'Sleep-related conditions',
-  };
+  Future<void> loadHealthCondition() async {
+    final jsonResponse = await healthConditionsApi.fetchHealthConditions();
+    final parsedItems = hcService.parseResponseToHCItem(jsonResponse);
+
+    setState(() {
+      items = parsedItems;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    healthConditionsApi = HealthConditionsApi();
+    hcService = HCService();
+    loadHealthCondition();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Retrieve the passed argument
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args != null && args is SignUpRequestDTO) {
+      signUpRequestDTO = args;
+    } else {
+      // Handle null or wrong type
+      throw Exception("Missing or invalid arguments for ABitAboutYoursScreen");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,9 +70,10 @@ class _HealthConditionScreenState extends State<HealthConditionScreen> {
 
               Expanded(
                 child: ListView.builder(
-                  itemCount: _conditions.length,
+                  itemCount: items.length,
                   itemBuilder: (context, index) {
-                    final condition = _conditions.keys.elementAt(index);
+                    final hcItem = items[index];
+
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.symmetric(
@@ -70,7 +91,7 @@ class _HealthConditionScreenState extends State<HealthConditionScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  condition,
+                                  hcItem.hcname ?? 'Unknown',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 16,
@@ -78,7 +99,8 @@ class _HealthConditionScreenState extends State<HealthConditionScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  _subtitles[condition]!,
+                                  'Health condition description here...',
+                                  // Optional
                                   style: const TextStyle(
                                     fontSize: 13,
                                     color: Colors.black54,
@@ -88,10 +110,10 @@ class _HealthConditionScreenState extends State<HealthConditionScreen> {
                             ),
                           ),
                           Switch(
-                            value: _conditions[condition]!,
+                            value: hcItem.a,
                             onChanged: (val) {
                               setState(() {
-                                _conditions[condition] = val;
+                                hcItem.a = val;
                               });
                             },
                           ),
@@ -115,7 +137,9 @@ class _HealthConditionScreenState extends State<HealthConditionScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        NavigationService.goBack();
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey.shade300,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -133,11 +157,16 @@ class _HealthConditionScreenState extends State<HealthConditionScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        final selected = _conditions.entries
-                            .where((e) => e.value)
-                            .map((e) => e.key)
+                        final selected = items
+                            .where((item) => item.a)
+                            .map((item) => item.id)
                             .toList();
-                        print("Selected: $selected");
+                        signUpRequestDTO.listHConditions = selected;
+                        NavigationService.pushNamed(
+                          'notiacceptance',
+                          arguments: signUpRequestDTO,
+                        );
+                        print(signUpRequestDTO.toString());
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF9B57F3),
@@ -153,19 +182,6 @@ class _HealthConditionScreenState extends State<HealthConditionScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _progressSegment(Color color) {
-    return Expanded(
-      child: Container(
-        height: 6,
-        margin: const EdgeInsets.only(right: 6),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(6),
         ),
       ),
     );

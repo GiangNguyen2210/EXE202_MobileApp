@@ -19,12 +19,71 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
       AllergiesScreenService();
   late final AllergensService allergensService;
 
-  late SignUpRequestDTO signUpRequestDTO;
+  SignUpRequestDTO signUpRequestDTO = SignUpRequestDTO(
+    mealScheduledDTO: MealScheduledDTO(),
+  );
 
   late List<AllergenItem> allergens = [];
 
   final TextEditingController _textController = TextEditingController();
   final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+
+  final List<AllergenItem> selectedAllergies = [];
+  List<AllergenItem> suggestions = [];
+
+  void _showOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+
+    // ❗️Filter out already selected items
+    final filteredSuggestions = suggestions
+        .where((item) => !selectedAllergies.contains(item))
+        .toList();
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        width: MediaQuery.of(context).size.width - 48,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          offset: const Offset(0, 55),
+          showWhenUnlinked: false,
+          child: Material(
+            elevation: 6,
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 50, maxHeight: 200),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: filteredSuggestions.length,
+                itemBuilder: (context, index) {
+                  final item = filteredSuggestions[index];
+                  return ListTile(
+                    dense: true,
+                    title: Text(item.name),
+                    onTap: () {
+                      _overlayEntry?.remove();
+                      _overlayEntry = null;
+                      FocusScope.of(context).unfocus();
+                      setState(() {
+                        selectedAllergies.add(item);
+                        signUpRequestDTO.listAllergies.add(item.id);
+                        _textController.clear();
+                        suggestions.clear();
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context)?.insert(_overlayEntry!);
+  }
 
   Future<void> loadIngredient() async {
     final jsonResponse = await allergiesScreenService.fetchCommonIngredient();
@@ -52,7 +111,6 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args != null && args is SignUpRequestDTO) {
       signUpRequestDTO = args;
-      signUpRequestDTO.listAllergies = [];
     } else {
       // Handle null or wrong type
       throw Exception("Missing or invalid arguments for ABitAboutYoursScreen");
@@ -62,10 +120,10 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _overlayEntry?.dispose();
+    _textController.dispose();
     super.dispose();
   }
-
-  final List<AllergenItem> selectedAllergies = [];
 
   @override
   Widget build(BuildContext context) {
@@ -91,19 +149,54 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
               const SizedBox(height: 24),
 
               // Search bar (non-functional)
-              TextField(
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
-                  hintText: "All allergens",
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+              CompositedTransformTarget(
+                link: _layerLink,
+                child: TextField(
+                  controller: _textController,
+                  onTap: () async {
+                    print('a');
+                    final json = await allergiesScreenService.fetchIngredients(
+                      searchTerm: "",
+                      page: 1,
+                      pageSize: 10,
+                    );
+                    final parsed = allergensService
+                        .parseIngredientToAllergenList(json);
+                    setState(() => suggestions = parsed);
+                    print('Parsed suggestions: ${parsed.length}');
+
+                    _showOverlay();
+                  },
+
+                  onSubmitted: (value) async {
+                    if (value.trim().isNotEmpty) {
+                      final json = await allergiesScreenService
+                          .fetchIngredients(
+                            searchTerm: value.trim(),
+                            page: 1,
+                            pageSize: 10,
+                          );
+                      final parsed = allergensService
+                          .parseIngredientToAllergenList(json);
+                      setState(() => suggestions = parsed);
+                      _showOverlay();
+                    }
+                  },
+
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    hintText: "All allergens",
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
+
               const SizedBox(height: 24),
 
               if (selectedAllergies.isNotEmpty)
@@ -140,7 +233,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
                                 onTap: () {
                                   setState(() {
                                     selectedAllergies.remove(al);
-                                    signUpRequestDTO.listAllergies?.remove(
+                                    signUpRequestDTO.listAllergies.remove(
                                       al.id,
                                     );
                                   });
@@ -183,14 +276,13 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
                             setState(() {
                               if (selected) {
                                 selectedAllergies.remove(allergen);
-                                signUpRequestDTO.listAllergies?.remove(
+                                signUpRequestDTO.listAllergies.remove(
                                   allergen.id,
                                 );
                               } else {
                                 selectedAllergies.add(allergen);
-                                signUpRequestDTO.listAllergies?.add(
-                                  allergen.id,
-                                );
+                                signUpRequestDTO.listAllergies.add(allergen.id);
+                                debugPrint("Added allergen id: ${allergen.id}");
                               }
                             });
                           },
@@ -218,6 +310,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
                                 Text(
                                   allergen.name,
                                   style: TextStyle(
+                                    fontSize: 8,
                                     color: selected
                                         ? Colors.white
                                         : Colors.black87,
@@ -275,19 +368,6 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
       ),
     );
   }
-
-  Widget _progressSegment(Color color) {
-    return Expanded(
-      child: Container(
-        height: 6,
-        margin: const EdgeInsets.only(right: 6),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(6),
-        ),
-      ),
-    );
-  }
 }
 
 class AllergenItem {
@@ -296,4 +376,14 @@ class AllergenItem {
   final int id;
 
   AllergenItem(this.name, this.icon, this.id);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AllergenItem &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
