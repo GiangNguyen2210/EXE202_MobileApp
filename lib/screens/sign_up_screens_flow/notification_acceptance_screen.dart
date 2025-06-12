@@ -1,5 +1,6 @@
 import 'package:exe202_mobile_app/models/DTOs/sign_up_request.dart';
 import 'package:exe202_mobile_app/service/navigate_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -18,6 +19,14 @@ class _NotificationAcceptanceScreenState
   late SignUpRequestDTO signUpRequestDTO;
 
   late FirebaseService firebaseService;
+
+  Future<void> load() async {
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+  }
 
   @override
   void initState() {
@@ -169,14 +178,19 @@ class _NotificationAcceptanceScreenState
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
+                            await load(); // 👈 Gọi requestPermission trước
+
                             signUpRequestDTO.deviceId = await firebaseService
                                 .requestAndSendFCMToken();
+
+                            print(signUpRequestDTO.toString());
+
                             NavigationService.pushNamed(
                               '/login',
                               arguments: signUpRequestDTO,
                             );
-                            print(signUpRequestDTO.toString());
                           },
+
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1E2A38),
                             padding: const EdgeInsets.symmetric(vertical: 16),

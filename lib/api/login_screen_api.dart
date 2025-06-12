@@ -108,6 +108,7 @@ class LoginScreenService {
         if (jsonResponse != null) {
           await storage.write(key: 'jwt_token', value: jsonResponse.Token);
           await storage.write(key: 'UPId', value: jsonResponse.UPId.toString());
+          print("${await storage.read(key: 'jwt_token')}");
           return jsonResponse;
         } else {
           final data = jsonDecode(response.body);
@@ -117,7 +118,8 @@ class LoginScreenService {
         }
       }
     } catch (e) {
-      throw Exception(")>!ERROR!<( : $e");
+      throw Exception(")>!ERROR!<( : ${e.toString()}");
+      return null;
     }
   }
 }

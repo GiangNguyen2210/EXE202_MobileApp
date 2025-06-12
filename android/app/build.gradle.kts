@@ -15,6 +15,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -43,10 +44,15 @@ flutter {
 }
 
 dependencies {
-    // ✅ Dùng Firebase BoM để đồng bộ tất cả phiên bản Firebase
+    // ✅ Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
 
-    // ✅ Thư viện Firebase bạn cần
+    // ✅ Các thư viện Firebase bạn dùng
     implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-analytics") // (tuỳ chọn)
+    implementation("com.google.firebase:firebase-analytics") // optional
+
+    // ✅ Cho Java 8+ API support trên các API thấp hơn
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4") // ✅ nâng từ 2.0.3 → 2.1.4
 }
+
+

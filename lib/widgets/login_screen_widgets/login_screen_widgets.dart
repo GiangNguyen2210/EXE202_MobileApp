@@ -286,7 +286,7 @@ class _SignInFormState extends State<SignInForm> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onPressed: () {
+            onPressed: () async {
               final email = _emailController.text.trim();
               final password = _passwordController.text;
               final confirmPassword = _confirmPasswordController.text;
@@ -310,12 +310,16 @@ class _SignInFormState extends State<SignInForm> {
               signUpRequestDTO.email = email;
               signUpRequestDTO.password = password;
               print(signUpRequestDTO.toJson());
-              loginScreenService.signUp(signUpRequestDTO);
-              NavigationService.pushNamed('homescreen', arguments: null);
-              // TODO: Call signup API here
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Sign up successful (simulate)")),
-              );
+              var result = await loginScreenService.signUp(signUpRequestDTO);
+              print("${result}");
+              if (result is CustomerLoginResponse) {
+                NavigationService.pushNamed('homescreen', arguments: null);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Sign up successful (simulate)"),
+                  ),
+                );
+              } // TODO: Call signup API here
             },
             child: const Text("Sign Up", style: TextStyle(fontSize: 16)),
           ),

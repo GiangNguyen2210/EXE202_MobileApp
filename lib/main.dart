@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:exe202_mobile_app/screens/home_screen.dart';
 import 'package:exe202_mobile_app/screens/notifications_screen.dart';
 import 'package:exe202_mobile_app/screens/profile_screen.dart';
@@ -19,8 +21,10 @@ import 'package:exe202_mobile_app/screens/sign_up_screens_flow/notification_acce
 import 'package:exe202_mobile_app/screens/sign_up_screens_flow/weight_selection_screen.dart';
 import 'package:exe202_mobile_app/screens/streak_screen.dart';
 import 'package:exe202_mobile_app/screens/subscription_screen.dart';
+import 'package:exe202_mobile_app/service/local_notification_service.dart';
 import 'package:exe202_mobile_app/service/navigate_service.dart';
 import 'package:exe202_mobile_app/widgets/app_bottom_navigation.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -32,12 +36,29 @@ import 'screens/login_screen.dart';
 import 'screens/result_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
+
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
   final storage = FlutterSecureStorage();
   String? token = await storage.read(key: 'jwt_token');
+
+  HttpOverrides.global = MyHttpOverrides();
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('📥 Foreground FCM: ${message.notification?.title}');
+    LocalNotificationService.showNotification(message);
+  });
 
   runApp(MyApp(initialRoute: token != null ? 'homescreen' : '/'));
 }
@@ -68,6 +89,8 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     );
 
     _animationController.reverse();
+
+    LocalNotificationService.initialize();
 
     if (!kIsWeb) {
       _initDeepLink();
@@ -127,7 +150,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: NavigationService.navigatorKey,
-      initialRoute: '/',
+      initialRoute: widget.initialRoute,
       routes: {
         '/': (context) => const LoginOrSignScreen(),
         '/knowyourgoals': (context) => const DefinesYourGoalsScreen(),

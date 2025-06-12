@@ -1,5 +1,6 @@
 import 'package:exe202_mobile_app/models/DTOs/sign_up_request.dart';
 import 'package:exe202_mobile_app/service/navigate_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:exe202_mobile_app/widgets/login_screen_widgets/login_screen_widgets.dart';
 
