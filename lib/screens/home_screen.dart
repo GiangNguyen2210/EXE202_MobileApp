@@ -1,6 +1,5 @@
 import 'package:exe202_mobile_app/screens/profile_screen.dart';
-
-import 'package:exe202_mobile_app/service/navigate_service.dart';
+import 'package:exe202_mobile_app/screens/recipe_detail_screen.dart'; // Thêm import
 import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,8 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<ScrollController> _scrollControllers = [];
   late Future<List<RecipeResponse>> _fetchRecipesFuture;
   String? _selectedCategory;
+  String? _searchTerm;
   late int _totalPages = 1;
   List<RecipeItem> _allRecipes = [];
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -49,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     for (var controller in _scrollControllers) {
       controller.dispose();
     }
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -70,9 +72,9 @@ class _HomeScreenState extends State<HomeScreen> {
         page: 1,
         pageSize: _recipesPerPage,
         mealName: _selectedCategory?.toLowerCase(),
+        searchTerm: _searchTerm,
       );
 
-      // Always update total pages first
       final totalPages = response.totalCount > 0
           ? (response.totalCount / _recipesPerPage).ceil()
           : 0;
@@ -81,7 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _totalPages = totalPages;
       });
 
-      // If no recipes found, return empty list and update state
       if (response.totalCount == 0 || response.items.isEmpty) {
         setState(() {
           _allRecipes = [];
@@ -89,7 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return [response];
       }
 
-      // Only proceed with multi-page loading if we have recipes
       final maxPage = _totalPages;
       int startPage = (currentPage - 2).clamp(1, maxPage);
       int endPage = (currentPage + 2).clamp(1, maxPage);
@@ -100,8 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
           api.fetchRecipes(
             page: page,
             pageSize: _recipesPerPage,
-
             mealName: _selectedCategory?.toLowerCase(),
+            searchTerm: _searchTerm,
           ),
         );
       }
@@ -115,35 +115,51 @@ class _HomeScreenState extends State<HomeScreen> {
 
       return responses;
     } catch (e) {
-      print('Error in _preloadRecipes: $e'); // Add debug logging
-      // Handle API errors gracefully
+      print('Error in _preloadRecipes: $e');
       setState(() {
         _allRecipes = [];
         _totalPages = 0;
       });
-      rethrow; // Re-throw to let FutureBuilder handle the error
+      rethrow;
     }
   }
 
   void _onCategorySelected(String category) {
-    print('Category selected: $category'); // Debug logging
-
+    print('Category selected: $category');
     setState(() {
       _selectedCategory = category == 'All Recipes' ? null : category;
       _currentPage = 0;
-      _allRecipes = []; // Clear existing recipes immediately
-      _totalPages = 1; // Reset to prevent UI issues
+      _allRecipes = [];
+      _totalPages = 1;
     });
 
-    // Reset page controller first
     if (_pageController.hasClients) {
       _pageController.jumpToPage(0);
     }
 
-    // Then fetch new data
     setState(() {
       _fetchRecipesFuture = _preloadRecipes(1);
     });
+  }
+
+  void _onSearchSubmitted(String value) {
+    setState(() {
+      _searchTerm = value.trim().isEmpty ? null : value.trim();
+      _isSearchBoxVisible = false;
+      _currentPage = 0;
+      _allRecipes = [];
+      _totalPages = 1;
+    });
+
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
+
+    setState(() {
+      _fetchRecipesFuture = _preloadRecipes(1);
+    });
+
+    _searchController.clear();
   }
 
   @override
@@ -214,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           margin: const EdgeInsets.only(right: 8.0),
                           child: TextField(
+                            controller: _searchController,
                             decoration: InputDecoration(
                               hintText: 'Find recipe...',
                               border: OutlineInputBorder(
@@ -226,12 +243,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                 horizontal: 14.0,
                                 vertical: 8.0,
                               ),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.clear, color: Colors.grey),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _searchTerm = null;
+                                    _fetchRecipesFuture = _preloadRecipes(1);
+                                  });
+                                },
+                              ),
                             ),
-                            onSubmitted: (value) {
-                              setState(() {
-                                _isSearchBoxVisible = false;
-                              });
-                            },
+                            onSubmitted: _onSearchSubmitted,
                           ),
                         ),
                       ),
@@ -245,13 +268,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: () {
                         setState(() {
                           _isSearchBoxVisible = !_isSearchBoxVisible;
+                          if (!_isSearchBoxVisible) {
+                            _searchController.clear();
+                            _searchTerm = null;
+                            _fetchRecipesFuture = _preloadRecipes(1);
+                          }
                         });
                       },
                     ),
                     IconButton(
                       icon: const Icon(IconlyLight.profile, color: Colors.grey),
                       onPressed: () {
-                        // Navigate to Profile screen with navigatorKey from context
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -271,7 +298,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     spacing: 6.0,
                     runSpacing: 8.0,
                     alignment: WrapAlignment.start,
-                    // Ensure chips start from the left
                     children: [
                       CategoryChip(
                         label: 'All Recipes',
@@ -302,7 +328,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              // Update your FutureBuilder section in HomeScreen's build method
               Expanded(
                 child: FutureBuilder<List<RecipeResponse>>(
                   future: _fetchRecipesFuture,
@@ -340,7 +365,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     } else if (!snapshot.hasData || _allRecipes.isEmpty) {
-                      // Handle empty state with better messaging
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -352,7 +376,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              _selectedCategory == null
+                              _searchTerm != null
+                                  ? 'No recipes found for "$_searchTerm"'
+                                  : _selectedCategory == null
                                   ? 'No recipes available yet'
                                   : 'No ${_selectedCategory!.toLowerCase()} recipes yet',
                               style: TextStyle(
@@ -363,8 +389,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              _selectedCategory == null
-                                  ? 'Check back later for delicious recipes!'
+                              _searchTerm != null
+                                  ? 'Try a different search term or category!'
                                   : 'Try exploring other categories or check back later!',
                               style: TextStyle(
                                 fontSize: 14,
@@ -379,19 +405,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     final recipes = _allRecipes;
 
-                    // This check is no longer needed since we always have at least 1 page
-
                     return PageView.builder(
                       controller: _pageController,
                       itemCount: _totalPages,
                       itemBuilder: (context, pageIndex) {
                         final startIndex = pageIndex * _recipesPerPage;
                         final endIndex =
-                            (startIndex + _recipesPerPage) > recipes.length
+                        (startIndex + _recipesPerPage) > recipes.length
                             ? recipes.length
                             : (startIndex + _recipesPerPage);
 
-                        // Handle case where we don't have recipes for this page
                         if (startIndex >= recipes.length) {
                           return const Center(
                             child: Text('No more recipes on this page'),
@@ -419,22 +442,35 @@ class _HomeScreenState extends State<HomeScreen> {
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
                                   gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        crossAxisSpacing: 16,
-                                        mainAxisSpacing: 16,
-                                        childAspectRatio: 0.65,
-                                      ),
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 16,
+                                    mainAxisSpacing: 16,
+                                    childAspectRatio: 0.65,
+                                  ),
                                   itemCount: pageRecipes.length,
                                   itemBuilder: (context, index) {
                                     final recipe = pageRecipes[index];
-                                    return RecipeCard(
-                                      title: recipe.recipeName,
-                                      time: '${recipe.timeEstimation} mins',
-                                      difficultyEstimation:
-                                          recipe.difficultyEstimation,
-                                      mealName: recipe.mealName,
-                                      imageUrl: recipe.imageUrl,
+                                    return GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const RecipeDetailScreen(),
+                                            settings: RouteSettings(
+                                              arguments: {'recipeId': recipe.recipeId},
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: RecipeCard(
+                                        title: recipe.recipeName,
+                                        time: '${recipe.timeEstimation} mins',
+                                        difficultyEstimation:
+                                        recipe.difficultyEstimation,
+                                        mealName: recipe.mealName,
+                                        imageUrl: recipe.imageUrl,
+                                      ),
                                     );
                                   },
                                 ),
@@ -463,11 +499,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.arrow_left, color: Colors.grey),
                     onPressed: _currentPage > 0
                         ? () {
-                            _pageController.previousPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          }
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
                         : null,
                   ),
                   Text(
@@ -478,11 +514,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.arrow_right, color: Colors.grey),
                     onPressed: _currentPage < _totalPages - 1
                         ? () {
-                            _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          }
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
                         : null,
                   ),
                 ],

@@ -19,13 +19,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   int _servings = 1;
   YoutubePlayerController? _youtubeController;
   bool _videoLoadFailed = false;
-  int? _recipeId; // Store recipeId as a state variable
+  int? _recipeId;
+  String? _videoId; // New: Store videoId to avoid re-processing
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    // Initialize _fetchRecipeFuture with a default or placeholder value
     _fetchRecipeFuture = Future.value(RecipeDetail(
       recipeId: 0,
       recipeName: 'Loading...',
@@ -45,12 +45,44 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final int recipeId = args?['recipeId'] ?? 33;
-    if (_recipeId != recipeId) { // Only update if recipeId changes
-      setState(() {
-        _recipeId = recipeId;
-        final api = RecipeDetailApi();
-        _fetchRecipeFuture = api.fetchRecipeDetail(recipeId);
+    if (_recipeId != recipeId) {
+      _recipeId = recipeId;
+      _youtubeController?.dispose(); // Dispose old controller
+      _youtubeController = null;
+      _videoId = null; // Reset videoId
+      _videoLoadFailed = false; // Reset video load state
+      final api = RecipeDetailApi();
+      _fetchRecipeFuture = api.fetchRecipeDetail(recipeId).then((recipe) {
+        // Process videoId after fetching recipe
+        _processVideoId(recipe.instructionVideoLink);
+        return recipe;
       });
+    }
+  }
+
+  void _processVideoId(String instructionVideoLink) {
+    final videoId = YoutubePlayer.convertUrlToId(instructionVideoLink);
+    if (videoId != null) {
+      _youtubeController = YoutubePlayerController(
+        initialVideoId: videoId,
+        flags: const YoutubePlayerFlags(
+          autoPlay: false,
+          mute: false,
+        ),
+      )..addListener(() {
+        if (_youtubeController!.value.hasError && !_videoLoadFailed) {
+          setState(() {
+            _videoLoadFailed = true;
+            _youtubeController?.dispose();
+            _youtubeController = null;
+            _videoId = null;
+          });
+        }
+      });
+      _videoId = videoId;
+    } else {
+      _videoLoadFailed = true;
+      _videoId = null;
     }
   }
 
@@ -139,33 +171,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             recipe.difficultyEstimation.clamp(1, 5),
           );
           final String nationWithFlag = _getNationWithFlag(recipe.nation);
-
-          if (_youtubeController == null && !_videoLoadFailed) {
-            final videoId = YoutubePlayer.convertUrlToId(
-              recipe.instructionVideoLink,
-            );
-            if (videoId != null) {
-              _youtubeController = YoutubePlayerController(
-                initialVideoId: videoId,
-                flags: const YoutubePlayerFlags(
-                  autoPlay: false,
-                  mute: false,
-                ),
-              )..addListener(() {
-                if (_youtubeController!.value.hasError) {
-                  setState(() {
-                    _videoLoadFailed = true;
-                    _youtubeController?.dispose();
-                    _youtubeController = null;
-                  });
-                }
-              });
-            } else {
-              setState(() {
-                _videoLoadFailed = true;
-              });
-            }
-          }
 
           return NotificationListener<ScrollNotification>(
             onNotification: (scrollInfo) {
