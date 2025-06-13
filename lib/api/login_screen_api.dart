@@ -42,6 +42,7 @@ class LoginScreenService {
           await storage.write(key: 'UPId', value: jsonResponse.UPId.toString());
           return jsonResponse;
         } else if (jsonResponse != null) {
+          await storage.write(key: 'UPId', value: jsonResponse.UPId.toString());
           return jsonResponse;
         }
       } else {

@@ -6,6 +6,7 @@ import '../api/payos_service.dart';
 import '../api/profile_api.dart';
 import '../models/DTOs/user_profile_response.dart';
 import '../models/DTOs/payment_request.dart';
+import '../service/user_id_service.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -17,29 +18,46 @@ class SubscriptionScreen extends StatefulWidget {
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   final PayOSService _payOSService = PayOSService();
   final ProfileApi _profileApi = ProfileApi();
-  static const int _hardcodedUpId = 1;
   late Future<UserProfileResponse> _userProfileFuture;
   bool _isPaymentLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _userProfileFuture = _profileApi.fetchUserProfile(_hardcodedUpId);
+    _userProfileFuture = _fetchUserProfile();
+  }
+
+  Future<UserProfileResponse> _fetchUserProfile() async {
+    final int? upId = await UserIdService.getUserId();
+    if (upId == null) {
+      throw Exception('Không tìm thấy UPId. Vui lòng đăng nhập lại.');
+    }
+    return _profileApi.fetchUserProfile(upId);
   }
 
   Future<void> _createPayment(
-    String plan,
-    int amount,
-    String description,
-  ) async {
+      String plan,
+      int amount,
+      String description,
+      ) async {
     if (_isPaymentLoading) return;
 
     setState(() => _isPaymentLoading = true);
     try {
+      final int? upId = await UserIdService.getUserId();
+      if (upId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không tìm thấy UPId. Vui lòng đăng nhập lại.'),
+          ),
+        );
+        return;
+      }
+
       final userProfile = await _userProfileFuture;
       if (userProfile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Không thể tải dữ liệu hồ sơ, vui lòng thử lại'),
           ),
         );
@@ -61,9 +79,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           userProfile.endDate!.isAfter(DateTime.now())) {
         if ((userProfile.subscriptionId == 2 && plan == 'Basic') ||
             (userProfile.subscriptionId == 3 && plan == 'Premium')) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Bạn đang sử dụng gói $plan')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Bạn đang sử dụng gói $plan')),
+          );
           return;
         }
       }
@@ -83,7 +101,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       );
       final response = await _payOSService.createPaymentLink(
         request,
-        _hardcodedUpId,
+        upId,
       );
       final uri = Uri.parse(response.checkoutUrl);
       if (await canLaunchUrl(uri)) {
@@ -92,9 +110,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         throw 'Không thể mở link thanh toán';
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi thanh toán: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi thanh toán: $e')),
+      );
     } finally {
       setState(() => _isPaymentLoading = false);
     }
@@ -139,8 +157,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             return Stack(
               children: [
                 Container(
-                  decoration: BoxDecoration(
-                    image: const DecorationImage(
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(
                       image: AssetImage('assets/LoginBGPicture.png'),
                       fit: BoxFit.cover,
                     ),
@@ -149,9 +167,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 SingleChildScrollView(
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 600),
+                      constraints: const BoxConstraints(maxWidth: 600),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.05),
+                        padding: EdgeInsets.symmetric(
+                            horizontal:
+                            MediaQuery.of(context).size.width * 0.05),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
@@ -233,14 +253,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                         () => _createPayment(
                                       'Premium',
                                       isBasicSubscribed ? 8000 : 15000,
-                                      isBasicSubscribed ? 'upgrade_to_vip2' : 'vip2',
+                                      isBasicSubscribed
+                                          ? 'upgrade_to_vip2'
+                                          : 'vip2',
                                     ),
                                     isPremium: true,
                                   ),
                                   const SizedBox(height: 12),
                                   const Text(
                                     'All plans include 14-day free trial',
-                                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.grey),
                                     textAlign: TextAlign.center,
                                   ),
                                 ],
@@ -300,21 +323,28 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          ...features.map((feature) => _buildPlanFeature(feature, isPremium: isPremium)).toList(),
+          ...features
+              .map((feature) => _buildPlanFeature(feature, isPremium: isPremium))
+              .toList(),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: (isPremium ? !isPremiumSubscribed : !isBasicSubscribed) ? (isPremium ? Colors.white : Colors.blue) : Colors.grey,
+                backgroundColor: (isPremium ? !isPremiumSubscribed : !isBasicSubscribed)
+                    ? (isPremium ? Colors.white : Colors.blue)
+                    : Colors.grey,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 2,
               ),
-              onPressed: _isPaymentLoading || (isPremium ? isPremiumSubscribed : isBasicSubscribed) ? null : onPressed,
+              onPressed: _isPaymentLoading ||
+                  (isPremium ? isPremiumSubscribed : isBasicSubscribed)
+                  ? null
+                  : onPressed,
               child: _isPaymentLoading
                   ? const SizedBox(
                 height: 24,
@@ -332,7 +362,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     : 'Choose ${isPremium ? 'Premium' : 'Basic'}',
                 style: TextStyle(
                   fontSize: 14,
-                  color: isPremium && !isPremiumSubscribed ? Colors.blue : Colors.white,
+                  color: isPremium && !isPremiumSubscribed
+                      ? Colors.blue
+                      : Colors.white,
                 ),
               ),
             ),
@@ -354,7 +386,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
           const SizedBox(width: 6),
           Expanded(
-            // Use Expanded to allow text to wrap
             child: Text(
               feature,
               style: TextStyle(
