@@ -59,7 +59,7 @@ class UserProfileResponse {
 
   factory UserProfileResponse.fromJson(Map<String, dynamic> json) {
     return UserProfileResponse(
-      upId: json['uPId'] ?? 0,
+      upId: json['upId'] ?? 0,
       fullName: json['fullName'] ?? '',
       username: json['username'],
       age: json['age'],

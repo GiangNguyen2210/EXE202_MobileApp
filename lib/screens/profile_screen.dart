@@ -36,6 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<UserProfileResponse> _fetchUserProfile() async {
     final int? upId = await UserIdService.getUserId();
+    print('Fetched upId: $upId');
     if (upId == null) {
       throw Exception('Không tìm thấy UPId. Vui lòng đăng nhập lại.');
     }
@@ -76,9 +77,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _saveProfile(UserProfileResponse userProfile) async {
-    if (_fullNameController.text.trim().isEmpty) {
+    print('Saving profile with upId: ${userProfile.upId}');
+    if (userProfile.upId == null || userProfile.upId == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Full Name không được để trống')),
+        const SnackBar(content: Text('Lỗi: upId không hợp lệ')),
       );
       return;
     }
@@ -103,12 +105,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         gender: _selectedGender ?? userProfile.gender ?? '',
         allergies: _selectedAllergies,
         healthConditions: _selectedHealthConditions
-            .map(
-              (hc) => HealthCondition(
-            condition: hc['condition'] ?? '',
-            status: hc['status'],
-          ),
-        )
+            .map((hc) => HealthCondition(
+          condition: hc['condition'] ?? '',
+          status: hc['status'],
+        ))
             .toList(),
         userId: userProfile.userId,
         email: _emailController.text,
@@ -220,6 +220,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
       child: Container(
+        constraints: const BoxConstraints(
+          maxWidth: 250, // Giới hạn chiều rộng tối đa
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
         decoration: BoxDecoration(
           color: Colors.grey[200],
@@ -229,9 +232,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              condition['condition'] ?? 'Unknown',
-              style: TextStyle(color: Colors.grey[800], fontSize: 14),
+            Flexible(
+              child: Text(
+                condition['condition'] ?? 'Unknown',
+                style: TextStyle(color: Colors.grey[800], fontSize: 14),
+                softWrap: true, // Cho phép xuống dòng
+              ),
             ),
             const SizedBox(width: 4.0),
             GestureDetector(
@@ -343,10 +349,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 .map((allergy) => TextEditingController(text: allergy))
                 .toList();
             _conditionControllers = userProfile.healthConditions
-                .map(
-                  (condition) =>
-                  TextEditingController(text: condition.condition),
-            )
+                .map((condition) => TextEditingController(text: condition.condition))
                 .toList();
 
             print('Building ProfileAvatar');
@@ -400,6 +403,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _selectedAllergies,
                           ),
                           child: Container(
+                            width: double.infinity,
                             padding: const EdgeInsets.symmetric(
                               vertical: 8.0,
                               horizontal: 12.0,
@@ -420,10 +424,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               spacing: 8.0,
                               runSpacing: 4.0,
                               children: _selectedAllergies
-                                  .map(
-                                    (allergy) =>
-                                    _buildAllergyChip(allergy),
-                              )
+                                  .map((allergy) => _buildAllergyChip(allergy))
                                   .toList(),
                             ),
                           ),
@@ -455,6 +456,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _selectedHealthConditions,
                           ),
                           child: Container(
+                            width: double.infinity, // Chiếm toàn bộ chiều rộng
                             padding: const EdgeInsets.symmetric(
                               vertical: 8.0,
                               horizontal: 12.0,
@@ -473,14 +475,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             )
                                 : Wrap(
                               spacing: 8.0,
-                              runSpacing: 4.0,
+                              runSpacing: 4.0, // Khôi phục như cũ
                               children: _selectedHealthConditions
-                                  .map(
-                                    (condition) =>
-                                    _buildHealthConditionChip(
-                                      condition,
-                                    ),
-                              )
+                                  .map((condition) => _buildHealthConditionChip(condition))
                                   .toList(),
                             ),
                           ),
@@ -491,9 +488,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               .entries
                               .map(
                                 (entry) => ListItem(
-                              title:
-                              entry.value['condition'] ??
-                                  'Unknown',
+                              title: entry.value['condition'] ?? 'Unknown',
                               dotColor: Colors.grey,
                               isEditing: false,
                             ),
@@ -509,9 +504,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _isEditing
                             ? Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 4.0,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: Row(
                             children: [
                               Container(
@@ -530,20 +523,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     labelText: 'Age',
                                     border: OutlineInputBorder(),
                                   ),
-                                  items:
-                                  List.generate(
-                                    100,
-                                        (index) => index + 1,
-                                  )
-                                      .map(
-                                        (age) =>
-                                        DropdownMenuItem<int>(
-                                          value: age,
-                                          child: Text(
-                                            age.toString(),
-                                          ),
-                                        ),
-                                  )
+                                  items: List.generate(100, (index) => index + 1)
+                                      .map((age) => DropdownMenuItem<int>(
+                                    value: age,
+                                    child: Text(age.toString()),
+                                  ))
                                       .toList(),
                                   onChanged: (value) {
                                     setState(() {
@@ -557,16 +541,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         )
                             : ListItem(
-                          title:
-                          'Age: ${userProfile.age?.toString() ?? 'N/A'}',
+                          title: 'Age: ${userProfile.age?.toString() ?? 'N/A'}',
                           dotColor: Colors.grey,
                           isEditing: false,
                         ),
                         _isEditing
                             ? Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 4.0,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: Row(
                             children: [
                               Container(
@@ -586,18 +567,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     border: OutlineInputBorder(),
                                   ),
                                   items: const [
-                                    DropdownMenuItem(
-                                      value: 'Male',
-                                      child: Text('Male'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'Female',
-                                      child: Text('Female'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'Other',
-                                      child: Text('Other'),
-                                    ),
+                                    DropdownMenuItem(value: 'Male', child: Text('Male')),
+                                    DropdownMenuItem(value: 'Female', child: Text('Female')),
+                                    DropdownMenuItem(value: 'Other', child: Text('Other')),
+                                    DropdownMenuItem(value: 'Prefer not to say', child: Text('Prefer not to say')),
                                   ],
                                   onChanged: (value) {
                                     setState(() {

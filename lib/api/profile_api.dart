@@ -54,18 +54,20 @@ class ProfileApi {
 
   Future<UserProfileResponse> updateUserProfile(UserProfileResponse profile) async {
     final String? token = await storage.read(key: 'jwt_token');
+    print('Sending update with upId: ${profile.upId}');
     final response = await http.put(
-      Uri.parse('$baseUrl/UserProfile/${1}'),
+      Uri.parse('$baseUrl/UserProfile/${profile.upId}'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       },
-      body: jsonEncode(profile.toJson()), // Use toJson method
+      body: jsonEncode(profile.toJson()),
     );
     if (response.statusCode == 200) {
-      return UserProfileResponse.fromJson(jsonDecode(response.body)); // Return the updated profile
+      return UserProfileResponse.fromJson(jsonDecode(response.body));
     } else {
-      throw Exception('Failed to update user profile: ${response.statusCode}-${response.body}');
+      final errorBody = jsonDecode(response.body);
+      throw Exception('Failed to update user profile: ${response.statusCode} - ${errorBody['error'] ?? response.body}');
     }
   }
 
