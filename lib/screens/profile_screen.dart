@@ -4,6 +4,7 @@ import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../api/profile_api.dart';
 import '../models/DTOs/user_profile_response.dart';
+import '../service/user_id_service.dart';
 import '../widgets/profile_screen_widgets/profile_screen_widgets.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -30,18 +31,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     print('Fetching user profile...');
-    _userProfileFuture = ProfileApi().fetchUserProfile(1).then((profile) {
-      _selectedAge = profile.age;
-      _selectedGender = profile.gender;
-      _selectedAllergies = List.from(profile.allergies ?? []);
-      _selectedHealthConditions = profile.healthConditions.isNotEmpty
-          ? profile.healthConditions
-                .map((hc) => {'condition': hc.condition, 'status': hc.status})
-                .toList()
-          : [];
-      print('Initial health conditions from API: $_selectedHealthConditions');
-      return profile;
-    });
+    _userProfileFuture = _fetchUserProfile();
+  }
+
+  Future<UserProfileResponse> _fetchUserProfile() async {
+    final int? upId = await UserIdService.getUserId();
+    print('Fetched upId: $upId');
+    if (upId == null) {
+      throw Exception('Không tìm thấy UPId. Vui lòng đăng nhập lại.');
+    }
+    final profile = await ProfileApi().fetchUserProfile(upId);
+    _selectedAge = profile.age;
+    _selectedGender = profile.gender;
+    _selectedAllergies = List.from(profile.allergies ?? []);
+    _selectedHealthConditions = profile.healthConditions.isNotEmpty
+        ? profile.healthConditions
+        .map((hc) => {'condition': hc.condition, 'status': hc.status})
+        .toList()
+        : [];
+    print('Initial health conditions from API: $_selectedHealthConditions');
+    return profile;
   }
 
   @override
@@ -62,39 +71,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _isEditing = !_isEditing;
       if (!_isEditing) {
-        _userProfileFuture = ProfileApi().fetchUserProfile(1).then((profile) {
-          _selectedAge = profile.age;
-          _selectedGender = profile.gender;
-          _selectedAllergies = List.from(profile.allergies ?? []);
-          _selectedHealthConditions = profile.healthConditions.isNotEmpty
-              ? profile.healthConditions
-                    .map(
-                      (hc) => {'condition': hc.condition, 'status': hc.status},
-                    )
-                    .toList()
-              : [];
-          print('Reset health conditions: $_selectedHealthConditions');
-          return profile;
-        });
+        _userProfileFuture = _fetchUserProfile();
       }
     });
   }
 
   void _saveProfile(UserProfileResponse userProfile) async {
-    if (_fullNameController.text.trim().isEmpty) {
+    print('Saving profile with upId: ${userProfile.upId}');
+    if (userProfile.upId == null || userProfile.upId == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Full Name cannot be empty')),
+        const SnackBar(content: Text('Lỗi: upId không hợp lệ')),
       );
       return;
     }
 
-    final emailPattern = RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-    );
+    final emailPattern = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     if (!_emailController.text.trim().isEmpty &&
         !emailPattern.hasMatch(_emailController.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid email address')),
+        const SnackBar(content: Text('Vui lòng nhập email hợp lệ')),
       );
       return;
     }
@@ -110,12 +105,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         gender: _selectedGender ?? userProfile.gender ?? '',
         allergies: _selectedAllergies,
         healthConditions: _selectedHealthConditions
-            .map(
-              (hc) => HealthCondition(
-                condition: hc['condition'] ?? '',
-                status: hc['status'],
-              ),
-            )
+            .map((hc) => HealthCondition(
+          condition: hc['condition'] ?? '',
+          status: hc['status'],
+        ))
             .toList(),
         userId: userProfile.userId,
         email: _emailController.text,
@@ -131,7 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         updatedProfile,
       );
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!')),
+        const SnackBar(content: Text('Cập nhật profile thành công!')),
       );
       print(
         'Received updated profile from server: age: ${serverUpdatedProfile.age}, gender: ${serverUpdatedProfile.gender}',
@@ -141,16 +134,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _userProfileFuture = Future.value(serverUpdatedProfile);
       });
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi cập nhật profile: $e')),
+      );
     }
   }
 
   Future<void> _showAllergiesDialog(
-    BuildContext context,
-    List<String> initialAllergies,
-  ) async {
+      BuildContext context,
+      List<String> initialAllergies,
+      ) async {
     final result = await showDialog<List<String>>(
       context: context,
       builder: (context) => AllergiesDialog(
@@ -167,9 +160,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _showHealthConditionsDialog(
-    BuildContext context,
-    List<Map<String, dynamic>> initialHealthConditions,
-  ) async {
+      BuildContext context,
+      List<Map<String, dynamic>> initialHealthConditions,
+      ) async {
     final result = await showDialog<List<Map<String, dynamic>>>(
       context: context,
       builder: (context) => HealthConditionsDialog(
@@ -227,6 +220,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
       child: Container(
+        constraints: const BoxConstraints(
+          maxWidth: 250, // Giới hạn chiều rộng tối đa
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
         decoration: BoxDecoration(
           color: Colors.grey[200],
@@ -236,9 +232,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              condition['condition'] ?? 'Unknown',
-              style: TextStyle(color: Colors.grey[800], fontSize: 14),
+            Flexible(
+              child: Text(
+                condition['condition'] ?? 'Unknown',
+                style: TextStyle(color: Colors.grey[800], fontSize: 14),
+                softWrap: true, // Cho phép xuống dòng
+              ),
             ),
             const SizedBox(width: 4.0),
             GestureDetector(
@@ -268,7 +267,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          // Remove the leading back button
           flexibleSpace: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -335,7 +333,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('Lỗi: ${snapshot.error}'));
           } else if (snapshot.hasData) {
             print('Rendering UI with data: ${snapshot.data!.fullName}');
             print('UserProfile: ${snapshot.data!.toString()}');
@@ -351,10 +349,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 .map((allergy) => TextEditingController(text: allergy))
                 .toList();
             _conditionControllers = userProfile.healthConditions
-                .map(
-                  (condition) =>
-                      TextEditingController(text: condition.condition),
-                )
+                .map((condition) => TextEditingController(text: condition.condition))
                 .toList();
 
             print('Building ProfileAvatar');
@@ -403,52 +398,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _isEditing
                             ? GestureDetector(
-                                onTap: () => _showAllergiesDialog(
-                                  context,
-                                  _selectedAllergies,
-                                ),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8.0,
-                                    horizontal: 12.0,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  child: _selectedAllergies.isEmpty
-                                      ? Text(
-                                          'No allergies selected',
-                                          style: TextStyle(
-                                            color: Colors.grey[800],
-                                            fontSize: 14,
-                                          ),
-                                        )
-                                      : Wrap(
-                                          spacing: 8.0,
-                                          runSpacing: 4.0,
-                                          children: _selectedAllergies
-                                              .map(
-                                                (allergy) =>
-                                                    _buildAllergyChip(allergy),
-                                              )
-                                              .toList(),
-                                        ),
-                                ),
-                              )
-                            : Column(
-                                children: _selectedAllergies
-                                    .asMap()
-                                    .entries
-                                    .map(
-                                      (entry) => ListItem(
-                                        title: entry.value,
-                                        dotColor: Colors.redAccent,
-                                        isEditing: false,
-                                      ),
-                                    )
-                                    .toList(),
+                          onTap: () => _showAllergiesDialog(
+                            context,
+                            _selectedAllergies,
+                          ),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8.0,
+                              horizontal: 12.0,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: _selectedAllergies.isEmpty
+                                ? Text(
+                              'No allergies selected',
+                              style: TextStyle(
+                                color: Colors.grey[800],
+                                fontSize: 14,
                               ),
+                            )
+                                : Wrap(
+                              spacing: 8.0,
+                              runSpacing: 4.0,
+                              children: _selectedAllergies
+                                  .map((allergy) => _buildAllergyChip(allergy))
+                                  .toList(),
+                            ),
+                          ),
+                        )
+                            : Column(
+                          children: _selectedAllergies
+                              .asMap()
+                              .entries
+                              .map(
+                                (entry) => ListItem(
+                              title: entry.value,
+                              dotColor: Colors.redAccent,
+                              isEditing: false,
+                            ),
+                          )
+                              .toList(),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -458,56 +451,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _isEditing
                             ? GestureDetector(
-                                onTap: () => _showHealthConditionsDialog(
-                                  context,
-                                  _selectedHealthConditions,
-                                ),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8.0,
-                                    horizontal: 12.0,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  child: _selectedHealthConditions.isEmpty
-                                      ? Text(
-                                          'No conditions selected',
-                                          style: TextStyle(
-                                            color: Colors.grey[800],
-                                            fontSize: 14,
-                                          ),
-                                        )
-                                      : Wrap(
-                                          spacing: 8.0,
-                                          runSpacing: 4.0,
-                                          children: _selectedHealthConditions
-                                              .map(
-                                                (condition) =>
-                                                    _buildHealthConditionChip(
-                                                      condition,
-                                                    ),
-                                              )
-                                              .toList(),
-                                        ),
-                                ),
-                              )
-                            : Column(
-                                children: _selectedHealthConditions
-                                    .asMap()
-                                    .entries
-                                    .map(
-                                      (entry) => ListItem(
-                                        title:
-                                            entry.value['condition'] ??
-                                            'Unknown',
-                                        dotColor: Colors.grey,
-                                        isEditing: false,
-                                      ),
-                                    )
-                                    .toList(),
+                          onTap: () => _showHealthConditionsDialog(
+                            context,
+                            _selectedHealthConditions,
+                          ),
+                          child: Container(
+                            width: double.infinity, // Chiếm toàn bộ chiều rộng
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8.0,
+                              horizontal: 12.0,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: _selectedHealthConditions.isEmpty
+                                ? Text(
+                              'No conditions selected',
+                              style: TextStyle(
+                                color: Colors.grey[800],
+                                fontSize: 14,
                               ),
+                            )
+                                : Wrap(
+                              spacing: 8.0,
+                              runSpacing: 4.0, // Khôi phục như cũ
+                              children: _selectedHealthConditions
+                                  .map((condition) => _buildHealthConditionChip(condition))
+                                  .toList(),
+                            ),
+                          ),
+                        )
+                            : Column(
+                          children: _selectedHealthConditions
+                              .asMap()
+                              .entries
+                              .map(
+                                (entry) => ListItem(
+                              title: entry.value['condition'] ?? 'Unknown',
+                              dotColor: Colors.grey,
+                              isEditing: false,
+                            ),
+                          )
+                              .toList(),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -517,112 +504,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _isEditing
                             ? Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 4.0,
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(
+                                  color: Colors.grey,
+                                  shape: BoxShape.circle,
                                 ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 10,
-                                      height: 10,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.grey,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: DropdownButtonFormField<int>(
-                                        value: _selectedAge,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Age',
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        items:
-                                            List.generate(
-                                                  100,
-                                                  (index) => index + 1,
-                                                )
-                                                .map(
-                                                  (age) =>
-                                                      DropdownMenuItem<int>(
-                                                        value: age,
-                                                        child: Text(
-                                                          age.toString(),
-                                                        ),
-                                                      ),
-                                                )
-                                                .toList(),
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _selectedAge = value;
-                                          });
-                                        },
-                                        hint: const Text('Select Age'),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : ListItem(
-                                title:
-                                    'Age: ${userProfile.age?.toString() ?? 'N/A'}',
-                                dotColor: Colors.grey,
-                                isEditing: false,
                               ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: DropdownButtonFormField<int>(
+                                  value: _selectedAge,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Age',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  items: List.generate(100, (index) => index + 1)
+                                      .map((age) => DropdownMenuItem<int>(
+                                    value: age,
+                                    child: Text(age.toString()),
+                                  ))
+                                      .toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedAge = value;
+                                    });
+                                  },
+                                  hint: const Text('Select Age'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                            : ListItem(
+                          title: 'Age: ${userProfile.age?.toString() ?? 'N/A'}',
+                          dotColor: Colors.grey,
+                          isEditing: false,
+                        ),
                         _isEditing
                             ? Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 4.0,
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(
+                                  color: Colors.grey,
+                                  shape: BoxShape.circle,
                                 ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 10,
-                                      height: 10,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.grey,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: DropdownButtonFormField<String>(
-                                        value: _selectedGender,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Gender',
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        items: const [
-                                          DropdownMenuItem(
-                                            value: 'Male',
-                                            child: Text('Male'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'Female',
-                                            child: Text('Female'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'Other',
-                                            child: Text('Other'),
-                                          ),
-                                        ],
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _selectedGender = value;
-                                          });
-                                        },
-                                        hint: const Text('Select Gender'),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : ListItem(
-                                title: 'Gender: ${userProfile.gender ?? 'N/A'}',
-                                dotColor: Colors.grey,
-                                isEditing: false,
                               ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: _selectedGender,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Gender',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(value: 'Male', child: Text('Male')),
+                                    DropdownMenuItem(value: 'Female', child: Text('Female')),
+                                    DropdownMenuItem(value: 'Other', child: Text('Other')),
+                                    DropdownMenuItem(value: 'Prefer not to say', child: Text('Prefer not to say')),
+                                  ],
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedGender = value;
+                                    });
+                                  },
+                                  hint: const Text('Select Gender'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                            : ListItem(
+                          title: 'Gender: ${userProfile.gender ?? 'N/A'}',
+                          dotColor: Colors.grey,
+                          isEditing: false,
+                        ),
                         ListItem(
                           title: 'Email: ${userProfile.email}',
                           dotColor: Colors.grey,
@@ -640,7 +605,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             );
           } else {
-            return const Center(child: Text('No data available'));
+            return const Center(child: Text('Không có dữ liệu'));
           }
         },
       ),

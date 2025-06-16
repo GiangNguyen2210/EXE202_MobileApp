@@ -19,13 +19,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   int _servings = 1;
   YoutubePlayerController? _youtubeController;
   bool _videoLoadFailed = false;
-  int? _recipeId; // Store recipeId as a state variable
+  int? _recipeId;
+  String? _videoId;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    // Initialize _fetchRecipeFuture with a default or placeholder value
     _fetchRecipeFuture = Future.value(RecipeDetail(
       recipeId: 0,
       recipeName: 'Loading...',
@@ -45,12 +45,47 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final int recipeId = args?['recipeId'] ?? 33;
-    if (_recipeId != recipeId) { // Only update if recipeId changes
-      setState(() {
-        _recipeId = recipeId;
-        final api = RecipeDetailApi();
-        _fetchRecipeFuture = api.fetchRecipeDetail(recipeId);
+    if (_recipeId != recipeId) {
+      _recipeId = recipeId;
+      _youtubeController?.dispose();
+      _youtubeController = null;
+      _videoId = null;
+      _videoLoadFailed = false;
+      final api = RecipeDetailApi();
+      _fetchRecipeFuture = api.fetchRecipeDetail(recipeId).then((recipe) {
+        _processVideoId(recipe.instructionVideoLink);
+        // Khởi tạo _servings bằng defaultServing nếu có
+        setState(() {
+          _servings = recipe.defaultServing ?? 1;
+        });
+        return recipe;
       });
+    }
+  }
+
+  void _processVideoId(String instructionVideoLink) {
+    final videoId = YoutubePlayer.convertUrlToId(instructionVideoLink);
+    if (videoId != null) {
+      _youtubeController = YoutubePlayerController(
+        initialVideoId: videoId,
+        flags: const YoutubePlayerFlags(
+          autoPlay: false,
+          mute: false,
+        ),
+      )..addListener(() {
+        if (_youtubeController!.value.hasError && !_videoLoadFailed) {
+          setState(() {
+            _videoLoadFailed = true;
+            _youtubeController?.dispose();
+            _youtubeController = null;
+            _videoId = null;
+          });
+        }
+      });
+      _videoId = videoId;
+    } else {
+      _videoLoadFailed = true;
+      _videoId = null;
     }
   }
 
@@ -96,6 +131,44 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     });
   }
 
+  List<Map<String, dynamic>> _parseRecipeSteps(String? recipeSteps) {
+    if (recipeSteps == null || recipeSteps.isEmpty) {
+      return [];
+    }
+    final steps = recipeSteps
+        .split(RegExp(r'(?=\d+\.)'))
+        .where((s) => s.isNotEmpty)
+        .toList()
+        .asMap()
+        .entries
+        .map((entry) {
+      final step = entry.value.trim();
+      final stepNumberMatch = RegExp(r'^(\d+)\.').firstMatch(step);
+      final stepNumber = stepNumberMatch != null
+          ? int.parse(stepNumberMatch.group(1)!)
+          : entry.key + 1;
+      final instruction = step.replaceFirst(RegExp(r'^\d+\.\s*'), '');
+      return {'stepNumber': stepNumber, 'instruction': instruction};
+    }).toList();
+    return steps;
+  }
+
+  String _calculateIngredientAmount(String amount, int servings, int defaultServing) {
+    try {
+      final baseAmount = double.parse(amount); // Chuyển amount thành số
+      final ratio = servings / (defaultServing == 0 ? 1 : defaultServing); // Tính tỉ lệ
+      final newAmount = baseAmount * ratio;
+      // Làm tròn dựa trên defaultUnit
+      if (newAmount % 1 == 0) {
+        return newAmount.toInt().toString(); // Số nguyên
+      } else {
+        return newAmount.toStringAsFixed(1); // 1 chữ số thập phân
+      }
+    } catch (e) {
+      return amount; // Trả về nguyên gốc nếu lỗi
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -139,33 +212,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             recipe.difficultyEstimation.clamp(1, 5),
           );
           final String nationWithFlag = _getNationWithFlag(recipe.nation);
-
-          if (_youtubeController == null && !_videoLoadFailed) {
-            final videoId = YoutubePlayer.convertUrlToId(
-              recipe.instructionVideoLink,
-            );
-            if (videoId != null) {
-              _youtubeController = YoutubePlayerController(
-                initialVideoId: videoId,
-                flags: const YoutubePlayerFlags(
-                  autoPlay: false,
-                  mute: false,
-                ),
-              )..addListener(() {
-                if (_youtubeController!.value.hasError) {
-                  setState(() {
-                    _videoLoadFailed = true;
-                    _youtubeController?.dispose();
-                    _youtubeController = null;
-                  });
-                }
-              });
-            } else {
-              setState(() {
-                _videoLoadFailed = true;
-              });
-            }
-          }
+          final steps = recipe.steps.isNotEmpty
+              ? recipe.steps
+              : _parseRecipeSteps(recipe.recipeSteps)
+              .map((s) => RecipeStep(
+            stepNumber: s['stepNumber'] as int,
+            instruction: s['instruction'] as String,
+          ))
+              .toList();
+          final defaultServing = recipe.defaultServing ?? 1;
 
           return NotificationListener<ScrollNotification>(
             onNotification: (scrollInfo) {
@@ -348,8 +403,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         const SizedBox(height: 8),
                         Column(
                           children: recipe.ingredients.map((ingredient) {
+                            final adjustedAmount = _calculateIngredientAmount(
+                              ingredient.amount,
+                              _servings,
+                              defaultServing,
+                            );
                             return _buildIngredientItem(
-                              '${ingredient.amount} ${ingredient.defaultUnit} ${ingredient.ingredient}',
+                              '$adjustedAmount ${ingredient.defaultUnit} ${ingredient.ingredient}',
                             );
                           }).toList(),
                         ),
@@ -365,7 +425,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: recipe.steps.length,
+                          itemCount: steps.length,
                           itemBuilder: (context, index) {
                             return Padding(
                               padding: const EdgeInsets.symmetric(
@@ -375,7 +435,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${recipe.steps[index].stepNumber}.',
+                                    '${steps[index].stepNumber}.',
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -384,7 +444,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      recipe.steps[index].instruction,
+                                      steps[index].instruction,
                                       style: const TextStyle(fontSize: 16),
                                     ),
                                   ),

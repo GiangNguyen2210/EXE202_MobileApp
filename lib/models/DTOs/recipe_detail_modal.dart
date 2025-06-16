@@ -8,7 +8,9 @@ class RecipeDetail {
   final int cuisineId;
   final String instructionVideoLink;
   final List<Ingredient> ingredients;
-  final List<Step> steps;
+  final List<RecipeStep> steps;
+  final String? recipeSteps;
+  final int? defaultServing; // Thêm defaultServing
 
   RecipeDetail({
     required this.recipeId,
@@ -21,6 +23,8 @@ class RecipeDetail {
     required this.instructionVideoLink,
     required this.ingredients,
     required this.steps,
+    this.recipeSteps,
+    this.defaultServing,
   });
 
   factory RecipeDetail.fromJson(Map<String, dynamic> json) {
@@ -36,7 +40,9 @@ class RecipeDetail {
       ingredients: (json['ingredients'] as List)
           .map((i) => Ingredient.fromJson(i))
           .toList(),
-      steps: (json['steps'] as List).map((s) => Step.fromJson(s)).toList(),
+      steps: (json['steps'] as List).map((s) => RecipeStep.fromJson(s)).toList(),
+      recipeSteps: json['recipeSteps'] as String?,
+      defaultServing: json['defaultServing'] as int?,
     );
   }
 }
@@ -61,17 +67,17 @@ class Ingredient {
   }
 }
 
-class Step {
+class RecipeStep {
   final int stepNumber;
   final String instruction;
 
-  Step({
+  RecipeStep({
     required this.stepNumber,
     required this.instruction,
   });
 
-  factory Step.fromJson(Map<String, dynamic> json) {
-    return Step(
+  factory RecipeStep.fromJson(Map<String, dynamic> json) {
+    return RecipeStep(
       stepNumber: json['stepNumber'],
       instruction: json['instruction'],
     );
