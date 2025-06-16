@@ -26,24 +26,27 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _fetchRecipeFuture = Future.value(RecipeDetail(
-      recipeId: 0,
-      recipeName: 'Loading...',
-      meals: '',
-      difficultyEstimation: 0,
-      timeEstimation: 0,
-      nation: '',
-      cuisineId: 0,
-      instructionVideoLink: '',
-      ingredients: [],
-      steps: [],
-    ));
+    _fetchRecipeFuture = Future.value(
+      RecipeDetail(
+        recipeId: 0,
+        recipeName: 'Loading...',
+        meals: '',
+        difficultyEstimation: 0,
+        timeEstimation: 0,
+        nation: '',
+        cuisineId: 0,
+        instructionVideoLink: '',
+        ingredients: [],
+        steps: [],
+      ),
+    );
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final int recipeId = args?['recipeId'] ?? 33;
     if (_recipeId != recipeId) {
       _recipeId = recipeId;
@@ -66,22 +69,20 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   void _processVideoId(String instructionVideoLink) {
     final videoId = YoutubePlayer.convertUrlToId(instructionVideoLink);
     if (videoId != null) {
-      _youtubeController = YoutubePlayerController(
-        initialVideoId: videoId,
-        flags: const YoutubePlayerFlags(
-          autoPlay: false,
-          mute: false,
-        ),
-      )..addListener(() {
-        if (_youtubeController!.value.hasError && !_videoLoadFailed) {
-          setState(() {
-            _videoLoadFailed = true;
-            _youtubeController?.dispose();
-            _youtubeController = null;
-            _videoId = null;
+      _youtubeController =
+          YoutubePlayerController(
+            initialVideoId: videoId,
+            flags: const YoutubePlayerFlags(autoPlay: false, mute: false),
+          )..addListener(() {
+            if (_youtubeController!.value.hasError && !_videoLoadFailed) {
+              setState(() {
+                _videoLoadFailed = true;
+                _youtubeController?.dispose();
+                _youtubeController = null;
+                _videoId = null;
+              });
+            }
           });
-        }
-      });
       _videoId = videoId;
     } else {
       _videoLoadFailed = true;
@@ -142,21 +143,27 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         .asMap()
         .entries
         .map((entry) {
-      final step = entry.value.trim();
-      final stepNumberMatch = RegExp(r'^(\d+)\.').firstMatch(step);
-      final stepNumber = stepNumberMatch != null
-          ? int.parse(stepNumberMatch.group(1)!)
-          : entry.key + 1;
-      final instruction = step.replaceFirst(RegExp(r'^\d+\.\s*'), '');
-      return {'stepNumber': stepNumber, 'instruction': instruction};
-    }).toList();
+          final step = entry.value.trim();
+          final stepNumberMatch = RegExp(r'^(\d+)\.').firstMatch(step);
+          final stepNumber = stepNumberMatch != null
+              ? int.parse(stepNumberMatch.group(1)!)
+              : entry.key + 1;
+          final instruction = step.replaceFirst(RegExp(r'^\d+\.\s*'), '');
+          return {'stepNumber': stepNumber, 'instruction': instruction};
+        })
+        .toList();
     return steps;
   }
 
-  String _calculateIngredientAmount(String amount, int servings, int defaultServing) {
+  String _calculateIngredientAmount(
+    String amount,
+    int servings,
+    int defaultServing,
+  ) {
     try {
       final baseAmount = double.parse(amount); // Chuyển amount thành số
-      final ratio = servings / (defaultServing == 0 ? 1 : defaultServing); // Tính tỉ lệ
+      final ratio =
+          servings / (defaultServing == 0 ? 1 : defaultServing); // Tính tỉ lệ
       final newAmount = baseAmount * ratio;
       // Làm tròn dựa trên defaultUnit
       if (newAmount % 1 == 0) {
@@ -215,11 +222,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           final steps = recipe.steps.isNotEmpty
               ? recipe.steps
               : _parseRecipeSteps(recipe.recipeSteps)
-              .map((s) => RecipeStep(
-            stepNumber: s['stepNumber'] as int,
-            instruction: s['instruction'] as String,
-          ))
-              .toList();
+                    .map(
+                      (s) => RecipeStep(
+                        stepNumber: s['stepNumber'] as int,
+                        instruction: s['instruction'] as String,
+                      ),
+                    )
+                    .toList();
           final defaultServing = recipe.defaultServing ?? 1;
 
           return NotificationListener<ScrollNotification>(
@@ -492,40 +501,40 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
       bottomNavigationBar: _isNavBarVisible
           ? SizedBox(
-        height: 82.0,
-        child: BottomNavigationBar(
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(IconlyLight.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(IconlyLight.search),
-              label: 'Search',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(IconlyLight.bookmark),
-              label: 'Saved',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(IconlyLight.buy),
-              label: 'Shopping',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(IconlyLight.user2),
-              label: 'Profile',
-            ),
-          ],
-          selectedItemColor: Colors.orange,
-          unselectedItemColor: Colors.grey,
-          currentIndex: 0,
-          onTap: (index) {
-            if (index == 0) {
-              Navigator.pop(context);
-            }
-          },
-        ),
-      )
+              height: 82.0,
+              child: BottomNavigationBar(
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(IconlyLight.home),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(IconlyLight.search),
+                    label: 'Search',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(IconlyLight.bookmark),
+                    label: 'Saved',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(IconlyLight.buy),
+                    label: 'Shopping',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(IconlyLight.user2),
+                    label: 'Profile',
+                  ),
+                ],
+                selectedItemColor: Colors.orange,
+                unselectedItemColor: Colors.grey,
+                currentIndex: 0,
+                onTap: (index) {
+                  if (index == 0) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            )
           : null,
     );
   }
@@ -537,7 +546,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         children: [
           const Icon(Icons.check_circle, color: Colors.red, size: 20),
           const SizedBox(width: 8),
-          Text(ingredient, style: const TextStyle(fontSize: 16)),
+          Text(ingredient, style: const TextStyle(fontSize: 10)),
         ],
       ),
     );

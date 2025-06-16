@@ -46,8 +46,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _selectedAllergies = List.from(profile.allergies ?? []);
     _selectedHealthConditions = profile.healthConditions.isNotEmpty
         ? profile.healthConditions
-        .map((hc) => {'condition': hc.condition, 'status': hc.status})
-        .toList()
+              .map((hc) => {'condition': hc.condition, 'status': hc.status})
+              .toList()
         : [];
     print('Initial health conditions from API: $_selectedHealthConditions');
     return profile;
@@ -79,13 +79,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _saveProfile(UserProfileResponse userProfile) async {
     print('Saving profile with upId: ${userProfile.upId}');
     if (userProfile.upId == null || userProfile.upId == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lỗi: upId không hợp lệ')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Lỗi: upId không hợp lệ')));
       return;
     }
 
-    final emailPattern = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    final emailPattern = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
     if (!_emailController.text.trim().isEmpty &&
         !emailPattern.hasMatch(_emailController.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -105,10 +107,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         gender: _selectedGender ?? userProfile.gender ?? '',
         allergies: _selectedAllergies,
         healthConditions: _selectedHealthConditions
-            .map((hc) => HealthCondition(
-          condition: hc['condition'] ?? '',
-          status: hc['status'],
-        ))
+            .map(
+              (hc) => HealthCondition(
+                condition: hc['condition'] ?? '',
+                status: hc['status'],
+              ),
+            )
             .toList(),
         userId: userProfile.userId,
         email: _emailController.text,
@@ -134,16 +138,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _userProfileFuture = Future.value(serverUpdatedProfile);
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi cập nhật profile: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi cập nhật profile: $e')));
     }
   }
 
   Future<void> _showAllergiesDialog(
-      BuildContext context,
-      List<String> initialAllergies,
-      ) async {
+    BuildContext context,
+    List<String> initialAllergies,
+  ) async {
     final result = await showDialog<List<String>>(
       context: context,
       builder: (context) => AllergiesDialog(
@@ -160,9 +164,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _showHealthConditionsDialog(
-      BuildContext context,
-      List<Map<String, dynamic>> initialHealthConditions,
-      ) async {
+    BuildContext context,
+    List<Map<String, dynamic>> initialHealthConditions,
+  ) async {
     final result = await showDialog<List<Map<String, dynamic>>>(
       context: context,
       builder: (context) => HealthConditionsDialog(
@@ -265,6 +269,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: AppBar(
+          leading: GestureDetector(
+            onTap: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                'homescreen',
+                (route) => false, // Xóa toàn bộ stack, chỉ giữ homescreen
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white60,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.arrow_back, color: Colors.black),
+              ),
+            ),
+          ),
           backgroundColor: Colors.white,
           elevation: 0,
           flexibleSpace: Container(
@@ -349,7 +373,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 .map((allergy) => TextEditingController(text: allergy))
                 .toList();
             _conditionControllers = userProfile.healthConditions
-                .map((condition) => TextEditingController(text: condition.condition))
+                .map(
+                  (condition) =>
+                      TextEditingController(text: condition.condition),
+                )
                 .toList();
 
             print('Building ProfileAvatar');
@@ -398,50 +425,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _isEditing
                             ? GestureDetector(
-                          onTap: () => _showAllergiesDialog(
-                            context,
-                            _selectedAllergies,
-                          ),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8.0,
-                              horizontal: 12.0,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: _selectedAllergies.isEmpty
-                                ? Text(
-                              'No allergies selected',
-                              style: TextStyle(
-                                color: Colors.grey[800],
-                                fontSize: 14,
-                              ),
-                            )
-                                : Wrap(
-                              spacing: 8.0,
-                              runSpacing: 4.0,
-                              children: _selectedAllergies
-                                  .map((allergy) => _buildAllergyChip(allergy))
-                                  .toList(),
-                            ),
-                          ),
-                        )
+                                onTap: () => _showAllergiesDialog(
+                                  context,
+                                  _selectedAllergies,
+                                ),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8.0,
+                                    horizontal: 12.0,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  child: _selectedAllergies.isEmpty
+                                      ? Text(
+                                          'No allergies selected',
+                                          style: TextStyle(
+                                            color: Colors.grey[800],
+                                            fontSize: 14,
+                                          ),
+                                        )
+                                      : Wrap(
+                                          spacing: 8.0,
+                                          runSpacing: 4.0,
+                                          children: _selectedAllergies
+                                              .map(
+                                                (allergy) =>
+                                                    _buildAllergyChip(allergy),
+                                              )
+                                              .toList(),
+                                        ),
+                                ),
+                              )
                             : Column(
-                          children: _selectedAllergies
-                              .asMap()
-                              .entries
-                              .map(
-                                (entry) => ListItem(
-                              title: entry.value,
-                              dotColor: Colors.redAccent,
-                              isEditing: false,
-                            ),
-                          )
-                              .toList(),
-                        ),
+                                children: _selectedAllergies
+                                    .asMap()
+                                    .entries
+                                    .map(
+                                      (entry) => ListItem(
+                                        title: entry.value,
+                                        dotColor: Colors.redAccent,
+                                        isEditing: false,
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -451,50 +481,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _isEditing
                             ? GestureDetector(
-                          onTap: () => _showHealthConditionsDialog(
-                            context,
-                            _selectedHealthConditions,
-                          ),
-                          child: Container(
-                            width: double.infinity, // Chiếm toàn bộ chiều rộng
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8.0,
-                              horizontal: 12.0,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: _selectedHealthConditions.isEmpty
-                                ? Text(
-                              'No conditions selected',
-                              style: TextStyle(
-                                color: Colors.grey[800],
-                                fontSize: 14,
-                              ),
-                            )
-                                : Wrap(
-                              spacing: 8.0,
-                              runSpacing: 4.0, // Khôi phục như cũ
-                              children: _selectedHealthConditions
-                                  .map((condition) => _buildHealthConditionChip(condition))
-                                  .toList(),
-                            ),
-                          ),
-                        )
+                                onTap: () => _showHealthConditionsDialog(
+                                  context,
+                                  _selectedHealthConditions,
+                                ),
+                                child: Container(
+                                  width: double
+                                      .infinity, // Chiếm toàn bộ chiều rộng
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8.0,
+                                    horizontal: 12.0,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  child: _selectedHealthConditions.isEmpty
+                                      ? Text(
+                                          'No conditions selected',
+                                          style: TextStyle(
+                                            color: Colors.grey[800],
+                                            fontSize: 14,
+                                          ),
+                                        )
+                                      : Wrap(
+                                          spacing: 8.0,
+                                          runSpacing: 4.0, // Khôi phục như cũ
+                                          children: _selectedHealthConditions
+                                              .map(
+                                                (condition) =>
+                                                    _buildHealthConditionChip(
+                                                      condition,
+                                                    ),
+                                              )
+                                              .toList(),
+                                        ),
+                                ),
+                              )
                             : Column(
-                          children: _selectedHealthConditions
-                              .asMap()
-                              .entries
-                              .map(
-                                (entry) => ListItem(
-                              title: entry.value['condition'] ?? 'Unknown',
-                              dotColor: Colors.grey,
-                              isEditing: false,
-                            ),
-                          )
-                              .toList(),
-                        ),
+                                children: _selectedHealthConditions
+                                    .asMap()
+                                    .entries
+                                    .map(
+                                      (entry) => ListItem(
+                                        title:
+                                            entry.value['condition'] ??
+                                            'Unknown',
+                                        dotColor: Colors.grey,
+                                        isEditing: false,
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -504,90 +542,116 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _isEditing
                             ? Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(
-                                  color: Colors.grey,
-                                  shape: BoxShape.circle,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4.0,
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: DropdownButtonFormField<int>(
-                                  value: _selectedAge,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Age',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  items: List.generate(100, (index) => index + 1)
-                                      .map((age) => DropdownMenuItem<int>(
-                                    value: age,
-                                    child: Text(age.toString()),
-                                  ))
-                                      .toList(),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _selectedAge = value;
-                                    });
-                                  },
-                                  hint: const Text('Select Age'),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.grey,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: DropdownButtonFormField<int>(
+                                        value: _selectedAge,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Age',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        items:
+                                            List.generate(
+                                                  100,
+                                                  (index) => index + 1,
+                                                )
+                                                .map(
+                                                  (age) =>
+                                                      DropdownMenuItem<int>(
+                                                        value: age,
+                                                        child: Text(
+                                                          age.toString(),
+                                                        ),
+                                                      ),
+                                                )
+                                                .toList(),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _selectedAge = value;
+                                          });
+                                        },
+                                        hint: const Text('Select Age'),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        )
+                              )
                             : ListItem(
-                          title: 'Age: ${userProfile.age?.toString() ?? 'N/A'}',
-                          dotColor: Colors.grey,
-                          isEditing: false,
-                        ),
+                                title:
+                                    'Age: ${userProfile.age?.toString() ?? 'N/A'}',
+                                dotColor: Colors.grey,
+                                isEditing: false,
+                              ),
                         _isEditing
                             ? Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(
-                                  color: Colors.grey,
-                                  shape: BoxShape.circle,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4.0,
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  value: _selectedGender,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Gender',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  items: const [
-                                    DropdownMenuItem(value: 'Male', child: Text('Male')),
-                                    DropdownMenuItem(value: 'Female', child: Text('Female')),
-                                    DropdownMenuItem(value: 'Other', child: Text('Other')),
-                                    DropdownMenuItem(value: 'Prefer not to say', child: Text('Prefer not to say')),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.grey,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        value: _selectedGender,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Gender',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        items: const [
+                                          DropdownMenuItem(
+                                            value: 'Male',
+                                            child: Text('Male'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Female',
+                                            child: Text('Female'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Other',
+                                            child: Text('Other'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Prefer not to say',
+                                            child: Text('Prefer not to say'),
+                                          ),
+                                        ],
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _selectedGender = value;
+                                          });
+                                        },
+                                        hint: const Text('Select Gender'),
+                                      ),
+                                    ),
                                   ],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _selectedGender = value;
-                                    });
-                                  },
-                                  hint: const Text('Select Gender'),
                                 ),
-                              ),
-                            ],
-                          ),
-                        )
+                              )
                             : ListItem(
-                          title: 'Gender: ${userProfile.gender ?? 'N/A'}',
-                          dotColor: Colors.grey,
-                          isEditing: false,
-                        ),
+                                title: 'Gender: ${userProfile.gender ?? 'N/A'}',
+                                dotColor: Colors.grey,
+                                isEditing: false,
+                              ),
                         ListItem(
                           title: 'Email: ${userProfile.email}',
                           dotColor: Colors.grey,

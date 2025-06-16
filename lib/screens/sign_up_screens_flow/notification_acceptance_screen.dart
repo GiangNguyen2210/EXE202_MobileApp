@@ -208,7 +208,7 @@ class _NotificationAcceptanceScreenState
               left: 16,
               child: GestureDetector(
                 onTap: () {
-                  Navigator.pop(context);
+                  NavigationService.goBack();
                 },
                 child: Container(
                   padding: const EdgeInsets.all(12),

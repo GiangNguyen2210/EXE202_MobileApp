@@ -1,3 +1,4 @@
+import 'package:exe202_mobile_app/service/navigate_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -65,6 +66,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: AppBar(
+          leading: GestureDetector(
+            onTap: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                'homescreen',
+                (route) => false, // Xóa toàn bộ stack, chỉ giữ homescreen
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white60,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.arrow_back, color: Colors.black),
+              ),
+            ),
+          ),
           flexibleSpace: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -91,12 +112,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               icon: const Icon(Icons.more_vert, color: Colors.black),
               onSelected: (String value) {
                 if (value == 'mark_all_read') {
-                  // Placeholder for marking all notifications as read
-                  // Example: Update your database to set isRead = true for all notifications
                   print('Mark all as read');
                 } else if (value == 'delete_all') {
-                  // Placeholder for deleting all notifications
-                  // Example: Delete all notifications from your database
                   print('Delete all notifications');
                 }
               },
