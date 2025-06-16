@@ -5,6 +5,7 @@ import '../screens/streak_screen.dart';
 import '../screens/subscription_screen.dart';
 import '../screens/notifications_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/suggestion_screen.dart'; // Thêm import
 
 class MyBottomNavigator extends StatefulWidget {
   final int currentIndex;
@@ -34,9 +35,10 @@ class _MyBottomNavigatorState extends State<MyBottomNavigator>
     _screens = [
       const HomeScreen(), // Index 0
       const SubscriptionScreen(), // Index 1
-      NotificationsScreen(), // Index 2
-      const StreakScreen(), // Index 3 (was Achievement, now Streak)
-      ProfileScreen(), // Index 4
+      const NotificationsScreen(), // Index 2
+      const StreakScreen(), // Index 3
+      const ProfileScreen(), // Index 4
+      SuggestionScreen(), // Index 5 (Mới)
     ];
 
     _animationController = AnimationController(
@@ -87,6 +89,7 @@ class _MyBottomNavigatorState extends State<MyBottomNavigator>
             label: 'Streak',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.lightbulb), label: 'Suggestions'), // Mới
         ],
         currentIndex: widget.currentIndex,
         onTap: _onTap,
@@ -97,7 +100,6 @@ class _MyBottomNavigatorState extends State<MyBottomNavigator>
   }
 }
 
-// AppBottomNavigation widget (unchanged from your provided code)
 class AppBottomNavigation extends StatelessWidget {
   final List<BottomNavigationBarItem> items;
   final int currentIndex;
@@ -120,43 +122,22 @@ class AppBottomNavigation extends StatelessWidget {
     this.unselectedItemColor,
   }) : super(key: key);
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   Widget navBar = BottomNavigationBar(
-  //     elevation: 0,
-  //     items: items,
-  //     currentIndex: currentIndex,
-  //     onTap: onTap,
-  //     backgroundColor: backgroundColor ?? Colors.white,
-  //     selectedItemColor: selectedItemColor ?? Colors.orange,
-  //     unselectedItemColor: unselectedItemColor ?? Colors.grey,
-  //   );
-  //
-  //   if (animation != null && isVisible) {
-  //     return SlideTransition(
-  //       position: animation!,
-  //       child: isVisible ? navBar : const SizedBox.shrink(),
-  //     );
-  //   }
-  //
-  //   return navBar;
-  // }
   @override
   Widget build(BuildContext context) {
     print('Building AppBottomNavigation, isVisible: $isVisible');
     return isVisible
         ? SlideTransition(
-            position: animation!,
-            child: BottomNavigationBar(
-              elevation: 0,
-              items: items,
-              currentIndex: currentIndex,
-              onTap: onTap,
-              backgroundColor: backgroundColor ?? Colors.white,
-              selectedItemColor: selectedItemColor ?? Colors.orange,
-              unselectedItemColor: unselectedItemColor ?? Colors.grey,
-            ),
-          )
-        : const SizedBox.shrink(); // Fully remove the navbar when hidden
+      position: animation!,
+      child: BottomNavigationBar(
+        elevation: 0,
+        items: items,
+        currentIndex: currentIndex,
+        onTap: onTap,
+        backgroundColor: backgroundColor ?? Colors.white,
+        selectedItemColor: selectedItemColor ?? Colors.orange,
+        unselectedItemColor: unselectedItemColor ?? Colors.grey,
+      ),
+    )
+        : const SizedBox.shrink();
   }
 }

@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:exe202_mobile_app/screens/home_screen.dart';
 import 'package:exe202_mobile_app/screens/notifications_screen.dart';
 import 'package:exe202_mobile_app/screens/profile_screen.dart';
@@ -21,6 +20,7 @@ import 'package:exe202_mobile_app/screens/sign_up_screens_flow/notification_acce
 import 'package:exe202_mobile_app/screens/sign_up_screens_flow/weight_selection_screen.dart';
 import 'package:exe202_mobile_app/screens/streak_screen.dart';
 import 'package:exe202_mobile_app/screens/subscription_screen.dart';
+import 'package:exe202_mobile_app/screens/suggestion_screen.dart'; // Thêm import
 import 'package:exe202_mobile_app/service/local_notification_service.dart';
 import 'package:exe202_mobile_app/service/navigate_service.dart';
 import 'package:exe202_mobile_app/widgets/app_bottom_navigation.dart';
@@ -82,7 +82,6 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    // Initialize animation controller for navbar
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -98,9 +97,8 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   }
 
   Future<void> _initDeepLink() async {
-    // Handle deep link when app is running
     _sub = _appLinks.uriLinkStream.listen(
-      (Uri? uri) {
+          (Uri? uri) {
         if (uri != null && uri.scheme == 'myapp' && uri.host == 'payment') {
           final orderCode = uri.queryParameters['orderCode'];
           if (orderCode != null) {
@@ -113,7 +111,6 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
       },
     );
 
-    // Xử lý deep link khi app khởi động
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null &&
@@ -168,7 +165,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
         'allergiesselection': (context) => const AllergySelectionScreen(),
         'healthconditionselection': (context) => const HealthConditionScreen(),
         'homescreen': (context) =>
-            const MyBottomNavigator(currentIndex: 0, child: HomeScreen()),
+        const MyBottomNavigator(currentIndex: 0, child: HomeScreen()),
         'subscreen': (context) => const MyBottomNavigator(
           currentIndex: 1,
           child: SubscriptionScreen(),
@@ -178,11 +175,12 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           child: NotificationsScreen(),
         ),
         'streakscreen': (context) =>
-            const MyBottomNavigator(currentIndex: 3, child: StreakScreen()),
+        const MyBottomNavigator(currentIndex: 3, child: StreakScreen()),
         'profilescreen': (context) =>
-            const MyBottomNavigator(currentIndex: 4, child: ProfileScreen()),
+        const MyBottomNavigator(currentIndex: 4, child: ProfileScreen()),
+        'suggestionscreen': (context) => // Thêm route mới
+        MyBottomNavigator(currentIndex: 5, child: SuggestionScreen()),
         'notiacceptance': (context) => const NotificationAcceptanceScreen(),
-        // or define a dynamic one using onGenerateRoute
       },
       theme: ThemeData(textTheme: GoogleFonts.poppinsTextTheme()),
     );
