@@ -130,13 +130,17 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FF),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            20,
+            24,
+            16 + MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 24),
-
               const Text(
                 "Allergies",
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
@@ -148,13 +152,11 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
               ),
               const SizedBox(height: 24),
 
-              // Search bar (non-functional)
               CompositedTransformTarget(
                 link: _layerLink,
                 child: TextField(
                   controller: _textController,
                   onTap: () async {
-                    print('a');
                     final json = await allergiesScreenService.fetchIngredients(
                       searchTerm: "",
                       page: 1,
@@ -163,11 +165,8 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
                     final parsed = allergensService
                         .parseIngredientToAllergenList(json);
                     setState(() => suggestions = parsed);
-                    print('Parsed suggestions: ${parsed.length}');
-
                     _showOverlay();
                   },
-
                   onSubmitted: (value) async {
                     if (value.trim().isNotEmpty) {
                       final json = await allergiesScreenService
@@ -182,7 +181,6 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
                       _showOverlay();
                     }
                   },
-
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
                     hintText: "All allergens",
@@ -199,115 +197,119 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
 
               const SizedBox(height: 24),
 
-              if (selectedAllergies.isNotEmpty)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Selected allergens",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
+              if (selectedAllergies.isNotEmpty) ...[
+                const Text(
+                  "Selected allergens",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+                ),
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 120),
+                  child: SingleChildScrollView(
+                    child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: selectedAllergies.map((al) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                al.name,
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              const SizedBox(width: 4),
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    selectedAllergies.remove(al);
-                                    signUpRequestDTO.listAllergies.remove(
-                                      al.id,
-                                    );
-                                  });
-                                },
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 16,
-                                  color: Colors.white,
+                        return ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 250),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    al.name,
+                                    style: const TextStyle(color: Colors.white),
+                                    softWrap: true,
+                                  ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      selectedAllergies.remove(al);
+                                      signUpRequestDTO.listAllergies.remove(
+                                        al.id,
+                                      );
+                                    });
+                                  },
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 24),
-                  ],
+                  ),
                 ),
+                const SizedBox(height: 24),
+              ],
+
               const Text(
                 "Common allergens",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
 
-              // Allergen grid
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  childAspectRatio: 3.8,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  children: allergens
-                      .where(
-                        (allergen) => !selectedAllergies.contains(allergen),
-                      )
-                      .map((allergen) {
-                        final selected = selectedAllergies.contains(allergen);
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              if (selected) {
-                                selectedAllergies.remove(allergen);
-                                signUpRequestDTO.listAllergies.remove(
-                                  allergen.id,
-                                );
-                              } else {
-                                selectedAllergies.add(allergen);
-                                signUpRequestDTO.listAllergies.add(allergen.id);
-                                debugPrint("Added allergen id: ${allergen.id}");
-                              }
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: selected ? Colors.black87 : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: selected
-                                    ? Colors.black87
-                                    : Colors.black12,
-                              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 12,
+                children: allergens
+                    .where((a) => !selectedAllergies.contains(a))
+                    .map((allergen) {
+                      final selected = selectedAllergies.contains(allergen);
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            if (selected) {
+                              selectedAllergies.remove(allergen);
+                              signUpRequestDTO.listAllergies.remove(
+                                allergen.id,
+                              );
+                            } else {
+                              selectedAllergies.add(allergen);
+                              signUpRequestDTO.listAllergies.add(allergen.id);
+                            }
+                          });
+                        },
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 180),
+                          // optional
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected ? Colors.black87 : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: selected ? Colors.black87 : Colors.black26,
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  allergen.icon,
-                                  size: 20,
-                                  color: selected
-                                      ? Colors.white
-                                      : Colors.black87,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                allergen.icon,
+                                size: 20,
+                                color: selected ? Colors.white : Colors.black87,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
                                   allergen.name,
                                   style: TextStyle(
                                     fontSize: 8,
@@ -315,23 +317,23 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
                                         ? Colors.white
                                         : Colors.black87,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        );
-                      })
-                      .toList(),
-                ),
+                        ),
+                      );
+                    })
+                    .toList(),
               ),
 
-              // Buttons
+              const SizedBox(height: 16),
+
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {
-                      NavigationService.goBack();
-                    },
+                    onPressed: () => NavigationService.goBack(),
                     icon: const Icon(Icons.arrow_back),
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.black12,
@@ -348,7 +350,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen>
                           'healthconditionselection',
                           arguments: signUpRequestDTO,
                         );
-                        print(signUpRequestDTO.toString());
+                        debugPrint(signUpRequestDTO.toString());
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black87,
