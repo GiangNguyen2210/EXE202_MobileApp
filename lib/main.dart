@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:exe202_mobile_app/api/meal_schedule_api.dart';
 import 'package:exe202_mobile_app/screens/home_screen.dart';
 import 'package:exe202_mobile_app/screens/notifications_screen.dart';
 import 'package:exe202_mobile_app/screens/profile_screen.dart';
@@ -22,6 +23,7 @@ import 'package:exe202_mobile_app/screens/sign_up_screens_flow/weight_selection_
 import 'package:exe202_mobile_app/screens/streak_screen.dart';
 import 'package:exe202_mobile_app/screens/subscription_screen.dart';
 import 'package:exe202_mobile_app/service/local_notification_service.dart';
+import 'package:exe202_mobile_app/service/meal_schedule_service.dart';
 import 'package:exe202_mobile_app/service/navigate_service.dart';
 import 'package:exe202_mobile_app/widgets/app_bottom_navigation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -32,6 +34,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:timezone/data/latest.dart' as tz;
 import 'screens/login_screen.dart';
 import 'screens/result_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -81,7 +84,6 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-
     // Initialize animation controller for navbar
     _animationController = AnimationController(
       vsync: this,

@@ -129,12 +129,12 @@ class _LoginFormState extends State<LoginForm> {
 
                     // Example: Navigate to home page
                     // Navigator.pushReplacementNamed(context, '/home');
+                    NavigationService.pushNamed('homescreen', arguments: null);
                   } else if (result is ErrorMessageResponse) {
                     ScaffoldMessenger.of(
                       context,
                     ).showSnackBar(SnackBar(content: Text(result.Message)));
                   }
-                  NavigationService.pushNamed('homescreen', arguments: null);
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("An error occurred: $e")),
@@ -160,12 +160,15 @@ class _LoginFormState extends State<LoginForm> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Welcome, ${result.Role}")),
                       );
+                      NavigationService.pushNamed(
+                        'homescreen',
+                        arguments: null,
+                      );
                     } else if (result is ErrorMessageResponse) {
                       ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(SnackBar(content: Text(result.Error)));
                     }
-                    NavigationService.pushNamed('homescreen', arguments: null);
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("An error occurred: $e")),

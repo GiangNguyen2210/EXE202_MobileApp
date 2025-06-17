@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:exe202_mobile_app/main.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:exe202_mobile_app/widgets/login_screen_widgets/login_screen_widgets.dart';
 
@@ -23,6 +24,14 @@ class _LoginOrSignScreenState extends State<LoginOrSignScreen>
     ("💪", Colors.yellow.shade300),
     ("🥦", Colors.tealAccent),
   ];
+
+  Future<void> loadPermission() async {
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+  }
 
   @override
   void initState() {
@@ -159,7 +168,11 @@ class _LoginOrSignScreenState extends State<LoginOrSignScreen>
             const SizedBox(height: 16),
 
             TextButton(
-              onPressed: () {
+              onPressed: () async {
+                await Future.delayed(const Duration(milliseconds: 1000));
+
+                await loadPermission();
+
                 NavigationService.pushNamed('/login', arguments: null);
               },
               child: const Text(

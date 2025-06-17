@@ -16,6 +16,11 @@ class _LoginScreenState extends State<LoginScreen> {
   late SignUpRequestDTO? signUpRequestDTO;
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 

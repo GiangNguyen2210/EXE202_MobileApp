@@ -1,8 +1,13 @@
 import 'package:exe202_mobile_app/screens/profile_screen.dart';
 import 'package:exe202_mobile_app/screens/recipe_detail_screen.dart'; // Thêm import
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import '../api/meal_schedule_api.dart';
+import '../service/meal_schedule_service.dart';
 import '../widgets/home_screen_widgets/category_chip_widget.dart';
 import '../widgets/home_screen_widgets/recipe_card_widget.dart';
 import '../api/recipe_api.dart';
@@ -27,10 +32,37 @@ class _HomeScreenState extends State<HomeScreen> {
   late int _totalPages = 1;
   List<RecipeItem> _allRecipes = [];
   final TextEditingController _searchController = TextEditingController();
+  final storage = FlutterSecureStorage();
+  MealScheduleService mealScheduleService = MealScheduleService();
+
+  Future<void> loadNoti() async {
+    final mealTimesSavedAtString = await storage.read(key: 'mealTimesSavedAt');
+
+    bool shouldRefresh = true;
+
+    if (mealTimesSavedAtString != null) {
+      final savedAt = DateTime.parse(mealTimesSavedAtString);
+      final now = DateTime.now();
+
+      // Check if more than 24 hours passed (or use a custom condition)
+      if (now.difference(savedAt).inHours < 24) {
+        shouldRefresh = false;
+      }
+    }
+
+    // Refresh if no meal times or expired
+    if (shouldRefresh) {
+      final upId = await storage.read(key: 'UPId');
+      if (upId != null) {
+        await mealScheduleService.get(upId);
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    loadNoti();
     _fetchRecipesFuture = _preloadRecipes(1);
     _pageController.addListener(() {
       final newPage = _pageController.page?.round() ?? 0;
@@ -244,7 +276,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 vertical: 8.0,
                               ),
                               suffixIcon: IconButton(
-                                icon: const Icon(Icons.clear, color: Colors.grey),
+                                icon: const Icon(
+                                  Icons.clear,
+                                  color: Colors.grey,
+                                ),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() {
@@ -411,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemBuilder: (context, pageIndex) {
                         final startIndex = pageIndex * _recipesPerPage;
                         final endIndex =
-                        (startIndex + _recipesPerPage) > recipes.length
+                            (startIndex + _recipesPerPage) > recipes.length
                             ? recipes.length
                             : (startIndex + _recipesPerPage);
 
@@ -442,12 +477,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
                                   gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 16,
-                                    childAspectRatio: 0.65,
-                                  ),
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 16,
+                                        mainAxisSpacing: 16,
+                                        childAspectRatio: 0.65,
+                                      ),
                                   itemCount: pageRecipes.length,
                                   itemBuilder: (context, index) {
                                     final recipe = pageRecipes[index];
@@ -456,9 +491,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => const RecipeDetailScreen(),
+                                            builder: (context) =>
+                                                const RecipeDetailScreen(),
                                             settings: RouteSettings(
-                                              arguments: {'recipeId': recipe.recipeId},
+                                              arguments: {
+                                                'recipeId': recipe.recipeId,
+                                              },
                                             ),
                                           ),
                                         );
@@ -467,7 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         title: recipe.recipeName,
                                         time: '${recipe.timeEstimation} mins',
                                         difficultyEstimation:
-                                        recipe.difficultyEstimation,
+                                            recipe.difficultyEstimation,
                                         mealName: recipe.mealName,
                                         imageUrl: recipe.imageUrl,
                                       ),
@@ -499,11 +537,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.arrow_left, color: Colors.grey),
                     onPressed: _currentPage > 0
                         ? () {
-                      _pageController.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    }
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
                         : null,
                   ),
                   Text(
@@ -514,11 +552,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.arrow_right, color: Colors.grey),
                     onPressed: _currentPage < _totalPages - 1
                         ? () {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    }
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
                         : null,
                   ),
                 ],

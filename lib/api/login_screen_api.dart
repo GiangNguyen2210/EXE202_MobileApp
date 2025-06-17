@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:exe202_mobile_app/api/meal_schedule_api.dart';
 import 'package:exe202_mobile_app/models/DTOs/sign_up_request.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
@@ -40,9 +41,11 @@ class LoginScreenService {
         if (jsonResponse != null && rememberMe) {
           await storage.write(key: 'jwt_token', value: jsonResponse.Token);
           await storage.write(key: 'UPId', value: jsonResponse.UPId.toString());
+          MealScheduleService().get(jsonResponse.UPId.toString());
           return jsonResponse;
         } else if (jsonResponse != null) {
           await storage.write(key: 'UPId', value: jsonResponse.UPId.toString());
+          MealScheduleService().get(jsonResponse.UPId.toString());
           return jsonResponse;
         }
       } else {
@@ -61,7 +64,6 @@ class LoginScreenService {
     final GoogleSignInAuthentication auth = await account!.authentication;
 
     final idToken = auth.idToken;
-    print("idToken : $idToken");
     final url = Uri.parse('$baseUrl/Auth/google');
 
     try {
