@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:exe202_mobile_app/api/meal_schedule_api.dart';
 import 'package:exe202_mobile_app/screens/home_screen.dart';
 import 'package:exe202_mobile_app/screens/notifications_screen.dart';
 import 'package:exe202_mobile_app/screens/profile_screen.dart';
@@ -22,6 +21,7 @@ import 'package:exe202_mobile_app/screens/sign_up_screens_flow/notification_acce
 import 'package:exe202_mobile_app/screens/sign_up_screens_flow/weight_selection_screen.dart';
 import 'package:exe202_mobile_app/screens/streak_screen.dart';
 import 'package:exe202_mobile_app/screens/subscription_screen.dart';
+import 'package:exe202_mobile_app/screens/suggestion_screen.dart'; // Thêm import
 import 'package:exe202_mobile_app/service/local_notification_service.dart';
 import 'package:exe202_mobile_app/service/meal_schedule_service.dart';
 import 'package:exe202_mobile_app/service/navigate_service.dart';
@@ -84,6 +84,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+
     // Initialize animation controller for navbar
     _animationController = AnimationController(
       vsync: this,
@@ -182,7 +183,9 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
         'streakscreen': (context) =>
             const MyBottomNavigator(currentIndex: 3, child: StreakScreen()),
         'profilescreen': (context) =>
-            const MyBottomNavigator(currentIndex: 4, child: ProfileScreen()),
+        const MyBottomNavigator(currentIndex: 4, child: ProfileScreen()),
+        'suggestionscreen': (context) => // Thêm route mới
+        MyBottomNavigator(currentIndex: 5, child: SuggestionScreen()),
         'notiacceptance': (context) => const NotificationAcceptanceScreen(),
         // or define a dynamic one using onGenerateRoute
       },
