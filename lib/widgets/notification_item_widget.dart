@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import '../screens/notifications_screen.dart';
+import '../models/DTOs/notification_response.dart'; // <-- import DTO đúng
 
 // Function to calculate time difference
 String _calculateTimeDifference(DateTime receivedAt) {
@@ -27,11 +27,11 @@ Color _getRandomColor() {
   );
 }
 
-class NotificationItem extends StatelessWidget {
-  final NotificationModel notification;
+class NotificationItemWidget extends StatelessWidget {
+  final NotificationItem notification;
   final bool isNew;
 
-  const NotificationItem({
+  const NotificationItemWidget({
     Key? key,
     required this.notification,
     required this.isNew,
@@ -41,7 +41,7 @@ class NotificationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: isNew ? Colors.grey[200] : Colors.transparent,
-      padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -50,34 +50,35 @@ class NotificationItem extends StatelessWidget {
             color: _getRandomColor(),
             size: 40,
           ),
-          SizedBox(width: 16),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  notification.title,
-                  style: TextStyle(
+                  notification.title ?? '',
+                  style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
-                if (notification.body.isNotEmpty)
+                if ((notification.body ?? '').isNotEmpty)
                   Text(
-                    notification.body,
+                    notification.body!,
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 14,
                     ),
                   ),
-                Text(
-                  _calculateTimeDifference(notification.receivedAt),
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
+                if (notification.createdAt != null)
+                  Text(
+                    _calculateTimeDifference(notification.createdAt!),
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
